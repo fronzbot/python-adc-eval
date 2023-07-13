@@ -1,0 +1,25 @@
+[MASTER]
+reports=no
+
+disable=
+    format,
+    invalid-name,
+    locally-disabled,
+    unused-argument,
+    duplicate-code,
+    implicit-str-concat,
+    too-many-arguments,
+    too-many-branches,
+    too-many-instance-attributes,
+    too-many-locals,
+    too-many-public-methods,
+    too-many-return-statements,
+    too-many-statements,
+    too-many-lines,
+    too-few-public-methods,
+    no-else-return,
+    unexpected-keyword-arg,
+    unnecessary-pass,
+    consider-using-f-string,
+    unused-variable,
+    consider-using-join,
