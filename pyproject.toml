@@ -1,0 +1,88 @@
+[build-system]
+requires = ["setuptools~=68.0", "wheel~=0.40.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-adc-eval"
+version = "0.1.0"
+license = {text = "MIT"}
+description = "ADC Evaluation Library"
+readme = "README.rst"
+authors = [{name = "Kevin Fronczak", email = "kfronczak@gmail.com"}]
+keywords = ["adc", "analog-to-digital", "evaluation", "eval", "spectrum"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.8.0"
+dependencies = [
+    "matplotlib==3.7.2",
+]
+
+[project.urls]
+"Source Code" = "https://github.com/fronzbot/python-adc-eval"
+"Bug Reports" = "https://github.com/fronzbot/python-adc-eval/issues"
+
+[tool.setuptools]
+platforms = ["any"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["adc_eval*"]
+
+[tool.ruff]
+select = [
+    "C",  # complexity
+    "D",  # docstrings
+    "E",  # pydocstyle
+    "F",  # pyflakes/autoflake
+    "G",  # flake8-logging-format
+    "I",  # isort
+    "N815",  # Varible {name} in class scope should not be mixedCase
+    "PGH004",  # Use specific rule codes when using noqa
+    "PLC",  # pylint
+    "PLE",  # pylint
+    "PLR",  # pylint
+    "PLW",  # pylint
+    "Q000",  # Double quotes found but single quotes preferred
+    "SIM118",  # Use {key} in {dict} instead of {key} in {dict}.keys()
+    "T20",  # flake8-print
+    "TRY004",  # Prefer TypeError exception for invalid type
+    "TRY200",  # Use raise from to specify exception cause
+    "UP",  # pyupgrade
+    "W",  # pycodestyle
+]
+ignore = [
+    "D202",  # No blank lines allowed after function docstring
+    "D203",  # 1 blank line required before class docstring
+    "D213",  # Multi-line docstring summary should start at the second line
+    "D406",  # Section name should end with a newline
+    "D407",  # Section name underlining
+    "E501",  # line too long
+    "E731",  # do not assign a lambda expression, use a def
+    "PLC1901", # Lots of false positives
+    # False positives https://github.com/astral-sh/ruff/issues/5386
+    "PLC0208", # Use a sequence type instead of a `set` when iterating over values
+    "PLR0911", # Too many return statements ({returns} > {max_returns})
+    "PLR0912", # Too many branches ({branches} > {max_branches})
+    "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
+    "PLR0915", # Too many statements ({statements} > {max_statements})
+    "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
+    "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
+    "UP006", # keep type annotation style as is
+    "UP007", # keep type annotation style as is
+    # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
+    "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
+]
+
+line-length = 88
+
+target-version = "py39"
+
+[tool.ruff.mccabe]
+max-complexity = 10

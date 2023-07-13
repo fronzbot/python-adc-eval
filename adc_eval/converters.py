@@ -1,15 +1,13 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-Analog <-> Digital converters behavioral models
-"""
+"""Analog <-> Digital converters behavioral models."""
 
 import numpy as np
 
 
-def analog2digital(sig_f, sample_freq=1e6, sample_n=1024, sample_bits=8, vref=3.3, noisy_lsb=1):
-    sample_quants = 2 ** sample_bits
+def analog2digital(
+    sig_f, sample_freq=1e6, sample_n=1024, sample_bits=8, vref=3.3, noisy_lsb=1
+):
+    """Analog to digital converter."""
+    sample_quants = 2**sample_bits
     sample_prd = 1 / sample_freq
     t = np.arange(0, sample_n * sample_prd, sample_prd)
     dv = vref / sample_quants
@@ -25,6 +23,7 @@ def analog2digital(sig_f, sample_freq=1e6, sample_n=1024, sample_bits=8, vref=3.
 
 
 def digital2analog(samples, sample_bits=8, vref=3.3):
-    quants = 2 ** sample_bits
+    """Digital to analog converter."""
+    quants = 2**sample_bits
     dv = vref / quants
     return samples * dv
