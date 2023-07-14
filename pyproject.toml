@@ -79,7 +79,9 @@ ignore = [
     # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
     "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]
-
+exclude = [
+    "__init__.py",
+]
 line-length = 88
 
 target-version = "py39"
