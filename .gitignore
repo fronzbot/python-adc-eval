@@ -2,3 +2,4 @@ __pycache__
 .tox
 python_adc_eval.egg-info
 dist
+.ruff_cache
