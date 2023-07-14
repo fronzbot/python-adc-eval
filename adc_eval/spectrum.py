@@ -61,11 +61,11 @@ def harmonics(psp, fft_n, ref_pow, sample_freq, leak=20, n=5, window="hanning"):
     df = sample_freq / fft_n
     # calculate fundamental frequency
     fund_bin = np.argmax(psp)
-    fund_freq = np.sum(
-        [psp[i] * i * df for i in range(fund_bin - leak, fund_bin + leak + 1)]
-    ) / np.sum(psp[fund_bin - leak : fund_bin + leak + 1])
-    if np.isinf:
-        fund_freq = fund_bin * df
+    fund_freq = fund_bin * df
+    num = np.sum([psp[i] * i * df for i in range(fund_bin - leak, fund_bin + leak + 1)])
+    den = np.sum(psp[fund_bin - leak : fund_bin + leak + 1])
+    if den > 0:
+        fund_freq = num / den
 
     # calculate harmonics info
     h = []
