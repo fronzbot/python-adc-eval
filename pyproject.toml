@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python-adc-eval"
-version = "0.1.0"
+version = "0.1.1"
 license = {text = "MIT"}
 description = "ADC Evaluation Library"
 readme = "README.rst"
@@ -79,7 +79,9 @@ ignore = [
     # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
     "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]
-
+exclude = [
+    "__init__.py",
+]
 line-length = 88
 
 target-version = "py39"
