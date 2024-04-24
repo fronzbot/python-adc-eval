@@ -1,3 +1,4 @@
+.DS_Store
 __pycache__
 .tox
 python_adc_eval.egg-info
