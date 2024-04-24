@@ -1,6 +1,6 @@
 black==24.3.0
 coverage==7.2.7
-pylint==2.17.4
+pylint==3.1.0
 ruff==0.0.278
 tox==4.6.4
 restructuredtext-lint==1.4.0
