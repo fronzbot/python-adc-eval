@@ -35,7 +35,7 @@ include-package-data = true
 [tool.setuptools.packages.find]
 include = ["adc_eval*"]
 
-[tool.ruff]
+[lint]
 select = [
     "C",  # complexity
     "D",  # docstrings
@@ -79,6 +79,8 @@ ignore = [
     # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
     "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]
+
+[tool.ruff]
 exclude = [
     "__init__.py",
 ]
@@ -86,5 +88,5 @@ line-length = 88
 
 target-version = "py39"
 
-[tool.ruff.mccabe]
+[lint.mccabe]
 max-complexity = 10
