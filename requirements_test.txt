@@ -1,7 +1,7 @@
 black==24.4.1
 coverage==7.5.0
 pylint==3.2.2
-ruff==0.4.1
+ruff==0.4.4
 tox==4.14.2
 restructuredtext-lint==1.4.0
 pygments==2.18.0
