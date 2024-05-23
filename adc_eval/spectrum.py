@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 def db_to_pow(value, places=3):
     """Convert dBW to W."""
     if isinstance(value, np.ndarray):
-        return 10 * np.log10(value)
+        return 10 ** (0.1 * value)
     return round(10 ** (0.1 * value), places)
 
 
