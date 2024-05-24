@@ -4,3 +4,4 @@ __pycache__
 python_adc_eval.egg-info
 dist
 .ruff_cache
+.coverage
