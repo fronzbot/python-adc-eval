@@ -1,5 +1,5 @@
 python-adc-eval |Lint| |PyPi Version| |Codecov| |Codestyle|
-===================================================
+=============================================================
 
 A python-based ADC evaluation tool, suitable for standalone or library-based usage
 
