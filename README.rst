@@ -1,4 +1,4 @@
-python-adc-eval |Lint| |PyPi Version| |Codestyle|
+python-adc-eval |Lint| |PyPi Version| |Codecov| |Codestyle|
 ===================================================
 
 A python-based ADC evaluation tool, suitable for standalone or library-based usage
@@ -52,3 +52,5 @@ Given an array of values representing the output of an ADC, the spectrum can be 
    :target: https://pypi.org/project/python-adc-eval
 .. |Codestyle| image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
+.. |Codecov| image:: https://codecov.io/gh/fronzbot/python-adc-eval/graph/badge.svg?token=156GMQ4NNV 
+ :target: https://codecov.io/gh/fronzbot/python-adc-eval
