@@ -118,7 +118,9 @@ def calc_psd(data, fs, nfft=2**12, single_sided=False):
     psd = np.mean(XF, axis=1) / (fs / nfft)  # average the ffts and divide by bin width
     freq = fs * np.linspace(0, 1, nfft)
     if single_sided:
+        # First we double all the bins, then we halve the DC bin
         psd = 2 * psd[0 : int(nfft / 2)]
+        psd[0] /= 2
         freq = freq[0 : int(nfft / 2)]
     return (freq, psd)
 

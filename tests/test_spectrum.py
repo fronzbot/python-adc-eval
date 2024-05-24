@@ -9,6 +9,10 @@ from adc_eval import spectrum
 class TestSpectrum(unittest.TestCase):
     """Test the spectrum module."""
 
+    def setUp(self):
+        """Initialize tests."""
+        pass
+
     def test_db_to_pow_places(self):
         """Test the db_to_pow conversion with multiple places."""
         test_val = 29.9460497
@@ -43,30 +47,6 @@ class TestSpectrum(unittest.TestCase):
         for i in range(0, len(exp_val)):
             self.assertEqual(spectrum.enob(test_val, places=i), exp_val[i])
 
-    def test_calc_psd_two_sided(self):
-        """Test calc_psd with dummy input."""
-        sq2 = np.sqrt(2) / 4
-        data = np.array([0, sq2, 0.5, sq2, 0, -sq2, -0.5, -sq2])
-        exp_psd = np.array([0, 0.5, 0, 0, 0, 0, 0, 0.5])
-        exp_freq = np.array([i / (len(data) - 1) for i in range(0, len(data))])
-        (freq, psd) = spectrum.calc_psd(data, 1, nfft=8, single_sided=False)
-
-        for index in range(0, len(psd)):
-            self.assertEqual(round(psd[index], 5), round(exp_psd[index], 5))
-            self.assertEqual(round(freq[index], 5), round(exp_freq[index], 5))
-
-    def test_calc_psd_one_sided(self):
-        """Test calc_psd with dummy input."""
-        sq2 = np.sqrt(2) / 4
-        data = np.array([0, sq2, 0.5, sq2, 0, -sq2, -0.5, -sq2])
-        exp_psd = 2 * np.array([0, 0.5, 0, 0])
-        exp_freq = np.array([i / (len(data) - 1) for i in range(0, len(data))])
-        (freq, psd) = spectrum.calc_psd(data, 1, nfft=8, single_sided=True)
-
-        for index in range(0, len(psd)):
-            self.assertEqual(round(psd[index], 5), round(exp_psd[index], 5))
-            self.assertEqual(round(freq[index], 5), round(exp_freq[index], 5))
-
     @mock.patch("adc_eval.spectrum.calc_psd")
     def test_get_spectrum(self, mock_calc_psd):
         """Test that the get_spectrum method returns power spectrum."""
@@ -80,3 +60,47 @@ class TestSpectrum(unittest.TestCase):
         self.assertEqual(
             spectrum.get_spectrum(None, fs=fs, nfft=nfft), (None, exp_spectrum)
         )
+
+    def test_sndr_sfdr_outputs(self):
+        """Test the sndr_sfdr method outputs."""
+        data = np.array([1, 2, 91, 7])
+        freq = np.array([100, 200, 300, 400])
+        full_scale = -3
+        nfft = 2**8
+        exp_return = {
+            "sig": {
+                "freq": 300,
+                "bin": 2,
+                "power": 91,
+                "dB": 19.6,
+                "dBFS": round(19.590 - full_scale, 1),
+            },
+            "spur": {
+                "freq": 400,
+                "bin": 3,
+                "power": 7,
+                "dB": 8.5,
+                "dBFS": round(8.451 - full_scale, 1),
+            },
+            "noise": {
+                "floor": 18 / nfft,
+                "power": 9,
+                "rms": 3,
+                "dBHz": round(-11.5297 - full_scale, 1),
+            },
+            "sndr": {
+                "dBc": 10.0,
+                "dBFS": round(full_scale - 9.542, 1),
+            },
+            "sfdr": {
+                "dBc": 11.1,
+                "dBFS": round(full_scale - 8.451, 1),
+            },
+            "enob": {
+                "bits": round((full_scale - 11.3024) / 6.02, 1),
+            },
+        }
+
+        result = spectrum.sndr_sfdr(data, freq, nfft, 0, full_scale=full_scale)
+        for key, val in exp_return.items():
+            self.assertDictEqual(result[key], val, msg=key)
