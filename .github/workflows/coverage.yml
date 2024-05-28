@@ -33,10 +33,11 @@ jobs:
       run: |
         tox -r -e cov
     - name: Codecov
-      uses: codecov/codecov-action@v4.0.1
+      uses: codecov/codecov-action@v4
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        flags: unittests
-        file: ./coverage.xml
-        name: adc_eval
-        fail_ci_if_error: true
+        fail_ci_if_error: true # optional (default = false)
+        files: ./coverage.xml
+        flags: unittests # optional
+        name: python-adc-eval
+        token: ${{ secrets.CODECOV_TOKEN }} # required
+        verbose: true # optional (default = false)
