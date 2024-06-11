@@ -5,3 +5,4 @@ python_adc_eval.egg-info
 dist
 .ruff_cache
 .coverage
+build
