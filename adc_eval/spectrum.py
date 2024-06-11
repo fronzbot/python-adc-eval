@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 def db_to_pow(value, places=3):
     """Convert dBW to W."""
     if isinstance(value, np.ndarray):
-        return 10 * np.log10(value)
+        return 10 ** (0.1 * value)
     return round(10 ** (0.1 * value), places)
 
 
@@ -90,18 +90,25 @@ def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20):
             bin_harm = int(harm - (zone - 1) * nfft / 2)
 
         # Make sure we pick the max bin where power is maximized; due to spectral leakage
-        bin_harm_max = bin_harm
+        # if bin_harm == nfft/2, set to bin of 0
+        if bin_harm == nfft / 2:
+            bin_harm = 0
+        pwr_max = spectrum[bin_harm]
         for i in range(bin_harm - leak, bin_harm + leak + 1):
-            if spectrum[i] > spectrum[bin_harm_max]:
-                bin_harm_max = i
-
-        bin_harm = bin_harm_max
+            try:
+                pwr = spectrum[i]
+                if pwr > pwr_max:
+                    bin_harm = i
+                    pwr_max = pwr
+            except IndexError:
+                # bin + leakage out of bounds, so stop looking
+                break
 
         harm_stats["harm"][harm_index]["bin"] = bin_harm
-        harm_stats["harm"][harm_index]["power"] = spectrum[bin_harm]
+        harm_stats["harm"][harm_index]["power"] = pwr
         harm_stats["harm"][harm_index]["freq"] = round(freq[bin_harm] / 1e6, 1)
-        harm_stats["harm"][harm_index]["dBc"] = dBW(spectrum[bin_harm] / psig)
-        harm_stats["harm"][harm_index]["dB"] = dBW(spectrum[bin_harm])
+        harm_stats["harm"][harm_index]["dBc"] = dBW(pwr / psig)
+        harm_stats["harm"][harm_index]["dB"] = dBW(pwr)
 
         harm_index = harm_index + 1
 
@@ -118,7 +125,9 @@ def calc_psd(data, fs, nfft=2**12, single_sided=False):
     psd = np.mean(XF, axis=1) / (fs / nfft)  # average the ffts and divide by bin width
     freq = fs * np.linspace(0, 1, nfft)
     if single_sided:
+        # First we double all the bins, then we halve the DC bin
         psd = 2 * psd[0 : int(nfft / 2)]
+        psd[0] /= 2
         freq = freq[0 : int(nfft / 2)]
     return (freq, psd)
 

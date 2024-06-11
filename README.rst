@@ -1,5 +1,5 @@
-python-adc-eval |Lint| |PyPi Version| |Codestyle|
-===================================================
+python-adc-eval |Lint| |PyPi Version| |Codecov| |Codestyle|
+=============================================================
 
 A python-based ADC evaluation tool, suitable for standalone or library-based usage
 
@@ -48,7 +48,9 @@ Given an array of values representing the output of an ADC, the spectrum can be 
 
 .. |Lint| image:: https://github.com/fronzbot/python-adc-eval/workflows/Lint/badge.svg
    :target: https://github.com/fronzbot/python-adc-eval/actions?query=workflow%3ALint
-.. |PyPi Version| image:: https://img.shields.io/pypi/v/spithon.svg
+.. |PyPi Version| image:: https://img.shields.io/pypi/v/python-adc-eval.svg
    :target: https://pypi.org/project/python-adc-eval
 .. |Codestyle| image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
+.. |Codecov| image:: https://codecov.io/gh/fronzbot/python-adc-eval/graph/badge.svg?token=156GMQ4NNV 
+ :target: https://codecov.io/gh/fronzbot/python-adc-eval
