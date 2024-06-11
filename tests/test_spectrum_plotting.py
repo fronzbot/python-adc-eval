@@ -77,9 +77,8 @@ class TestSpectrumPlotting(unittest.TestCase):
         leakage_bins = 10
         stats = spectrum.find_harmonics(
             pwr, freq, self.nfft, self.bin, self.arms, harms=2, leak=leakage_bins
-
         )
-        self.assertEqual(stats["harm"][2]["bin"], self.nfft/2 - 1)
+        self.assertEqual(stats["harm"][2]["bin"], self.nfft / 2 - 1)
 
     def test_find_harmonics_on_fft_bound(self):
         """Test find harmonics with harmonics landing at nfft/2."""
@@ -89,12 +88,11 @@ class TestSpectrumPlotting(unittest.TestCase):
         leakage_bins = 10
         stats = spectrum.find_harmonics(
             pwr, freq, self.nfft, self.bin, self.arms, harms=5, leak=leakage_bins
-
         )
         self.assertEqual(stats["harm"][2]["bin"], 2 * self.bin)
         self.assertEqual(stats["harm"][3]["bin"], 3 * self.bin)
         self.assertEqual(stats["harm"][4]["bin"], 0)
-        self.assertEqual(stats["harm"][5]["bin"], self.nfft - 5*self.bin)
+        self.assertEqual(stats["harm"][5]["bin"], self.nfft - 5 * self.bin)
 
     def test_plot_string(self):
         """Test proper return of plotting string."""

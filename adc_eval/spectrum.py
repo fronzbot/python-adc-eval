@@ -91,7 +91,7 @@ def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20):
 
         # Make sure we pick the max bin where power is maximized; due to spectral leakage
         # if bin_harm == nfft/2, set to bin of 0
-        if bin_harm == nfft/2:
+        if bin_harm == nfft / 2:
             bin_harm = 0
         pwr_max = spectrum[bin_harm]
         for i in range(bin_harm - leak, bin_harm + leak + 1):
