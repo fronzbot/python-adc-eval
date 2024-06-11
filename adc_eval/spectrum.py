@@ -98,7 +98,7 @@ def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20):
             try:
                 pwr = spectrum[i]
                 if pwr > pwr_max:
-                    bin_harm_max = i
+                    bin_harm = i
                     pwr_max = pwr
             except IndexError:
                 # bin + leakage out of bounds, so stop looking
