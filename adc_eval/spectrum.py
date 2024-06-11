@@ -105,7 +105,7 @@ def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20):
                 # bin + leakage out of bounds, so stop looking
                 break
 
-        harm_stats["harm"][harm_index]["bin"] = bin_harm
+        harm_stats["harm"][harm_index]["bin"] = bin_harm_max
         harm_stats["harm"][harm_index]["power"] = pwr_max
         harm_stats["harm"][harm_index]["freq"] = round(freq[bin_harm] / 1e6, 1)
         harm_stats["harm"][harm_index]["dBc"] = dBW(pwr_max / psig)
