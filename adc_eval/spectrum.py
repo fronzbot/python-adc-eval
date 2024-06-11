@@ -94,21 +94,22 @@ def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20):
         if bin_harm == nfft / 2:
             bin_harm = 0
         pwr_max = spectrum[bin_harm]
+        bin_harm_max = bin_harm
         for i in range(bin_harm - leak, bin_harm + leak + 1):
             try:
                 pwr = spectrum[i]
                 if pwr > pwr_max:
-                    bin_harm = i
+                    bin_harm_max = i
                     pwr_max = pwr
             except IndexError:
                 # bin + leakage out of bounds, so stop looking
                 break
 
-        harm_stats["harm"][harm_index]["bin"] = bin_harm
-        harm_stats["harm"][harm_index]["power"] = pwr
+        harm_stats["harm"][harm_index]["bin"] = bin_harm_max
+        harm_stats["harm"][harm_index]["power"] = pwr_max
         harm_stats["harm"][harm_index]["freq"] = round(freq[bin_harm] / 1e6, 1)
-        harm_stats["harm"][harm_index]["dBc"] = dBW(pwr / psig)
-        harm_stats["harm"][harm_index]["dB"] = dBW(pwr)
+        harm_stats["harm"][harm_index]["dBc"] = dBW(pwr_max / psig)
+        harm_stats["harm"][harm_index]["dB"] = dBW(pwr_max)
 
         harm_index = harm_index + 1
 
