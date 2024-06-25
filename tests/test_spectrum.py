@@ -103,6 +103,6 @@ class TestSpectrum(unittest.TestCase):
             },
         }
 
-        result = spectrum.sndr_sfdr(data, fs, freq, nfft, 0, full_scale=full_scale)
+        result = spectrum.sndr_sfdr(data, freq, fs, nfft, 0, full_scale=full_scale)
         for key, val in exp_return.items():
             self.assertDictEqual(result[key], val, msg=key)
