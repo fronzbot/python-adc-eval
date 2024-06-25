@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python-adc-eval"
-version = "0.3.0"
+version = "0.4.0b0"
 license = {text = "MIT"}
 description = "ADC Evaluation Library"
 readme = "README.rst"
@@ -13,13 +13,13 @@ keywords = ["adc", "analog-to-digital", "evaluation", "eval", "spectrum"]
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
 ]
-requires-python = ">=3.8.0"
+requires-python = ">=3.9.0"
 dependencies = [
     "matplotlib==3.9.0",
 ]
