@@ -121,7 +121,7 @@ class TestSpectrumPlotting(unittest.TestCase):
             f"SFDR = {all_stats['sfdr']['dBFS']} dBFS" in plt_str, msg=msg_txt
         )
         self.assertTrue(
-            f"Noise Floor = {all_stats['noise']['dBHz']} dBFS/Hz" in plt_str,
+            f"Noise Floor = {all_stats['noise']['dBHz']} dBFS" in plt_str,
             msg=msg_txt,
         )
         self.assertTrue(
