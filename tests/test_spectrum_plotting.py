@@ -98,7 +98,7 @@ class TestSpectrumPlotting(unittest.TestCase):
         """Test proper return of plotting string."""
         self.bin = 13
         (freq, pwr) = self.gen_spectrum(3)
-        stats = spectrum.sndr_sfdr(pwr, freq, self.nfft, leak=0, full_scale=0)
+        stats = spectrum.sndr_sfdr(pwr, freq, 1, self.nfft, leak=0, full_scale=0)
         harms = spectrum.find_harmonics(
             pwr, freq, self.nfft, self.bin, self.arms, harms=3, leak=0
         )
