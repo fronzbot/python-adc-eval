@@ -23,7 +23,7 @@ def enob(sndr, places=1):
     return round((sndr - 1.76) / 6.02, places)
 
 
-def sndr_sfdr(spectrum, freq, nfft, leak, full_scale=0):
+def sndr_sfdr(spectrum, freq, fs, nfft, leak, full_scale=0):
     """Get SNDR and SFDR."""
     # Zero the DC bin
     spectrum[0] = 0
@@ -31,6 +31,7 @@ def sndr_sfdr(spectrum, freq, nfft, leak, full_scale=0):
     psig = sum(spectrum[i] for i in range(bin_sig - leak, bin_sig + leak + 1))
     spectrum_n = spectrum
     spectrum_n[bin_sig] = 0
+    fbin = fs / nfft
 
     for i in range(bin_sig - leak, bin_sig + leak + 1):
         spectrum_n[i] = 0
@@ -63,6 +64,7 @@ def sndr_sfdr(spectrum, freq, nfft, leak, full_scale=0):
         "power": noise_power,
         "rms": np.sqrt(noise_power),
         "dBHz": round(dBW(noise_floor) - full_scale, 1),
+        "NSD": round(dBW(noise_floor) - full_scale - 2*dBW(fbin), 1)
     }
     stats["sndr"] = {
         "dBc": dBW(psig / noise_power),
@@ -177,7 +179,7 @@ def plot_spectrum(
 
     pwr_dB = 10 * np.log10(pwr) - scalar
 
-    sndr_stats = sndr_sfdr(pwr, freq, nfft, leak=leak, full_scale=full_scale)
+    sndr_stats = sndr_sfdr(pwr, freq, fs, nfft, leak=leak, full_scale=full_scale)
     harm_stats = find_harmonics(
         pwr,
         freq,
@@ -259,7 +261,8 @@ def get_plot_string(stats, full_scale, fs, nfft, window):
     plt_str += f"SFDR = {stats['sfdr']['dBFS']} dBFS ({stats['sfdr']['dBc']} dBc)\n"
     plt_str += f"Pspur = {stats['spur']['dBFS']} dBFS\n"
     plt_str += f"fspur = {round(stats['spur']['freq']/1e6, 2)} MHz\n"
-    plt_str += f"Noise Floor = {stats['noise']['dBHz']} dBFS/Hz\n"
+    plt_str += f"Noise Floor = {stats['noise']['dBHz']} dBFS\n"
+    plt_str += f"NSD = {stats['noise']['NSD']} dBFS\n"
     plt_str += "\n"
     plt_str += "==== Harmonics ====\n"
 
