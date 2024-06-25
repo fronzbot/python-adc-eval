@@ -98,7 +98,7 @@ class TestSpectrumPlotting(unittest.TestCase):
         """Test proper return of plotting string."""
         self.bin = 13
         (freq, pwr) = self.gen_spectrum(3)
-        stats = spectrum.sndr_sfdr(pwr, freq, self.nfft, leak=0, full_scale=0)
+        stats = spectrum.sndr_sfdr(pwr, freq, 1, self.nfft, leak=0, full_scale=0)
         harms = spectrum.find_harmonics(
             pwr, freq, self.nfft, self.bin, self.arms, harms=3, leak=0
         )
@@ -121,7 +121,7 @@ class TestSpectrumPlotting(unittest.TestCase):
             f"SFDR = {all_stats['sfdr']['dBFS']} dBFS" in plt_str, msg=msg_txt
         )
         self.assertTrue(
-            f"Noise Floor = {all_stats['noise']['dBHz']} dBFS/Hz" in plt_str,
+            f"Noise Floor = {all_stats['noise']['dBHz']} dBFS" in plt_str,
             msg=msg_txt,
         )
         self.assertTrue(
