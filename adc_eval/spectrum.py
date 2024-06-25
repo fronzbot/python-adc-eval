@@ -63,8 +63,8 @@ def sndr_sfdr(spectrum, freq, fs, nfft, leak, full_scale=0):
         "floor": noise_floor,
         "power": noise_power,
         "rms": np.sqrt(noise_power),
-        "dBHz": round(dBW(noise_floor) - full_scale, 1),
-        "NSD": round(dBW(noise_floor) - full_scale - 2 * dBW(fbin), 1),
+        "dBHz": round(dBW(noise_floor, 3) - full_scale, 1),
+        "NSD": round(dBW(noise_floor, 3) - full_scale - 2 * dBW(fbin, 3), 1),
     }
     stats["sndr"] = {
         "dBc": dBW(psig / noise_power),

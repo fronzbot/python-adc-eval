@@ -88,7 +88,7 @@ class TestSpectrum(unittest.TestCase):
                 "power": 9,
                 "rms": 3,
                 "dBHz": round(-11.529675 - full_scale, 1),
-                "NSD": round(-11.529675 - full_scale + 48.1648, 1),
+                "NSD": round(36.6351 - full_scale, 1),
             },
             "sndr": {
                 "dBc": 10.0,
