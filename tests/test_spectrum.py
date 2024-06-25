@@ -67,6 +67,7 @@ class TestSpectrum(unittest.TestCase):
         freq = np.array([100, 200, 300, 400])
         full_scale = -3
         nfft = 2**8
+        fs = 1
         exp_return = {
             "sig": {
                 "freq": 300,
@@ -87,6 +88,7 @@ class TestSpectrum(unittest.TestCase):
                 "power": 9,
                 "rms": 3,
                 "dBHz": round(-11.5297 - full_scale, 1),
+                "NSD": round(-11.5297 - full_scale - 48.1648, 1),
             },
             "sndr": {
                 "dBc": 10.0,
@@ -101,6 +103,6 @@ class TestSpectrum(unittest.TestCase):
             },
         }
 
-        result = spectrum.sndr_sfdr(data, freq, nfft, 0, full_scale=full_scale)
+        result = spectrum.sndr_sfdr(data, fs, freq, nfft, 0, full_scale=full_scale)
         for key, val in exp_return.items():
             self.assertDictEqual(result[key], val, msg=key)
