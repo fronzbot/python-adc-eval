@@ -26,7 +26,8 @@ def enob(sndr, places=1):
 def sndr_sfdr(spectrum, freq, fs, nfft, leak, full_scale=0):
     """Get SNDR and SFDR."""
     # Zero the DC bin
-    spectrum[0] = 0
+    for i in range(0, leak + 1):
+        spectrum[i] = 0
     bin_sig = np.argmax(spectrum)
     psig = sum(spectrum[i] for i in range(bin_sig - leak, bin_sig + leak + 1))
     spectrum_n = spectrum
@@ -79,7 +80,7 @@ def sndr_sfdr(spectrum, freq, fs, nfft, leak, full_scale=0):
     return stats
 
 
-def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20):
+def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20, fscale=1e6):
     """Get the harmonic contents of the data."""
     harm_stats = {"harm": {}}
     harm_index = 2
@@ -109,7 +110,7 @@ def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20):
 
         harm_stats["harm"][harm_index]["bin"] = bin_harm_max
         harm_stats["harm"][harm_index]["power"] = pwr_max
-        harm_stats["harm"][harm_index]["freq"] = round(freq[bin_harm] / 1e6, 1)
+        harm_stats["harm"][harm_index]["freq"] = round(freq[bin_harm] / fscale, 1)
         harm_stats["harm"][harm_index]["dBc"] = dBW(pwr_max / psig)
         harm_stats["harm"][harm_index]["dB"] = dBW(pwr_max)
 
@@ -151,6 +152,7 @@ def plot_spectrum(
     window="rectangular",
     no_plot=False,
     yaxis="power",
+    fscale="MHz",
 ):
     """Plot Power Spectrum for input signal."""
     wsize = data.size
@@ -159,9 +161,20 @@ def plot_spectrum(
         "hanning": np.hanning(wsize),
     }
 
+    fscalar = {
+        "Hz": 1,
+        "kHz": 1e3,
+        "MHz": 1e6,
+        "GHz": 1e9,
+    }
+
     if window not in windows:
         print(f"WARNING: {window} not implemented. Defaulting to 'rectangular'.")
         window = "rectangular"
+
+    if fscale not in fscalar:
+        print(f"WARNING: {fscale} not implemented. Defaulting to 'MHz'.")
+        fscale = "MHz"
 
     wscale = {
         "rectangular": 1.0,
@@ -179,6 +192,8 @@ def plot_spectrum(
 
     pwr_dB = 10 * np.log10(pwr) - scalar
 
+    xscale = fscalar[fscale]
+
     sndr_stats = sndr_sfdr(pwr, freq, fs, nfft, leak=leak, full_scale=full_scale)
     harm_stats = find_harmonics(
         pwr,
@@ -188,19 +203,20 @@ def plot_spectrum(
         sndr_stats["sig"]["power"],
         harms=harmonics,
         leak=leak,
+        fscale=xscale,
     )
 
     stats = {**sndr_stats, **harm_stats}
 
     if not no_plot:
-        plt_str = get_plot_string(stats, full_scale, fs, nfft, window)
+        plt_str = get_plot_string(stats, full_scale, fs, nfft, window, xscale, fscale)
 
         fig, ax = plt.subplots(figsize=(15, 8))
-        ax.plot(freq / 1e6, pwr_dB)
+        ax.plot(freq / xscale, pwr_dB)
         ax.set_ylabel(f"Power Spectrum ({yunits})", fontsize=18)
-        ax.set_xlabel("Frequency (MHz)", fontsize=16)
+        ax.set_xlabel(f"Frequency ({fscale})", fontsize=16)
         ax.set_title("Output Power Spectrum", fontsize=16)
-        ax.set_xlim([0, fs / 2e6])
+        ax.set_xlim([0, fs / (2 * xscale)])
         ax.set_ylim([1.1 * min(pwr_dB), 0])
         ax.annotate(
             plt_str,
@@ -241,7 +257,7 @@ def plot_spectrum(
     return (pwr, stats)
 
 
-def get_plot_string(stats, full_scale, fs, nfft, window):
+def get_plot_string(stats, full_scale, fs, nfft, window, xscale=1e6, fscale="MHz"):
     """Generate plot string from stats dict."""
 
     plt_str = "==== FFT ====\n"
@@ -252,22 +268,22 @@ def get_plot_string(stats, full_scale, fs, nfft, window):
     plt_str += "==== Signal ====\n"
     plt_str += f"FullScale = {full_scale} dB\n"
     plt_str += f"Psig = {stats['sig']['dBFS']} dBFS ({stats['sig']['dB']} dB)\n"
-    plt_str += f"fsig = {round(stats['sig']['freq']/1e6, 2)} MHz\n"
-    plt_str += f"fsamp = {round(fs/1e6, 2)} MHz\n"
+    plt_str += f"fsig = {round(stats['sig']['freq']/xscale, 2)} {fscale}\n"
+    plt_str += f"fsamp = {round(fs/xscale, 2)} {fscale}\n"
     plt_str += "\n"
     plt_str += "====  SNDR/SFDR  ====\n"
     plt_str += f"ENOB = {stats['enob']['bits']} bits\n"
     plt_str += f"SNDR = {stats['sndr']['dBFS']} dBFS ({stats['sndr']['dBc']} dBc)\n"
     plt_str += f"SFDR = {stats['sfdr']['dBFS']} dBFS ({stats['sfdr']['dBc']} dBc)\n"
     plt_str += f"Pspur = {stats['spur']['dBFS']} dBFS\n"
-    plt_str += f"fspur = {round(stats['spur']['freq']/1e6, 2)} MHz\n"
+    plt_str += f"fspur = {round(stats['spur']['freq']/xscale, 2)} {fscale}\n"
     plt_str += f"Noise Floor = {stats['noise']['dBHz']} dBFS\n"
     plt_str += f"NSD = {stats['noise']['NSD']} dBFS\n"
     plt_str += "\n"
     plt_str += "==== Harmonics ====\n"
 
     for hindex, hdata in stats["harm"].items():
-        plt_str += f"HD{hindex} = {round(hdata['dB'] - full_scale, 1)} dBFS @ {hdata['freq']} MHz\n"
+        plt_str += f"HD{hindex} = {round(hdata['dB'] - full_scale, 1)} dBFS @ {hdata['freq']} {fscale}\n"
 
     plt_str += "\n"
 
@@ -284,6 +300,7 @@ def analyze(
     window="rectangular",
     no_plot=False,
     yaxis="fullscale",
+    fscale="MHz",
 ):
     """Perform spectral analysis on input waveform."""
     (spectrum, stats) = plot_spectrum(
@@ -296,6 +313,7 @@ def analyze(
         window=window,
         no_plot=no_plot,
         yaxis=yaxis,
+        fscale=fscale,
     )
 
     return (spectrum, stats)
