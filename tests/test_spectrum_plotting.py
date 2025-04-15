@@ -3,7 +3,7 @@
 import unittest
 import numpy as np
 from unittest import mock
-from adc_eval import spectrum
+from adc_eval.eval import spectrum
 
 
 class TestSpectrumPlotting(unittest.TestCase):

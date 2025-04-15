@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools~=68.0", "wheel>=0.40,<0.46"]
+requires = ["setuptools>=68,<76", "wheel~=0.40,<0.46"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "python-adc-eval"
-version = "0.4.0b0"
+version = "0.3.0"
 license = {text = "MIT"}
 description = "ADC Evaluation Library"
 readme = "README.rst"
