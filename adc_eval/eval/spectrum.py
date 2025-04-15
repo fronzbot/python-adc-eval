@@ -25,6 +25,7 @@ def enob(sndr, places=1):
 
 def sndr_sfdr(spectrum, freq, fs, nfft, leak, full_scale=0):
     """Get SNDR and SFDR."""
+
     # Zero the DC bin
     for i in range(0, leak + 1):
         spectrum[i] = 0
@@ -119,27 +120,35 @@ def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20, fscale
     return harm_stats
 
 
-def calc_psd(data, fs, nfft=2**12, single_sided=False):
+def calc_psd(data, fs, nfft=2**12):
     """Calculate the PSD using the Bartlett method."""
-    nwindows = int(np.floor(len(data) / nfft))
+    nwindows = max(1, int(np.floor(len(data) / nfft)))
     nfft = int(nfft)
     xs = data[0 : int(nwindows * nfft)]
     xt = xs.reshape(nwindows, nfft).T
     XF = abs(np.fft.fft(xt, nfft, axis=0) / nfft) ** 2
     psd = np.mean(XF, axis=1) / (fs / nfft)  # average the ffts and divide by bin width
-    freq = fs * np.linspace(0, 1, nfft)
-    if single_sided:
-        # First we double all the bins, then we halve the DC bin
-        psd = 2 * psd[0 : int(nfft / 2)]
-        psd[0] /= 2
-        freq = freq[0 : int(nfft / 2)]
-    return (freq, psd)
+    psd += np.finfo(float).eps  # Prevents zeros in the PSD
+    freq = np.fft.fftshift(np.fft.fftfreq(nfft, d=1 / fs))
+
+    # For single sided we double all the bins, then we halve the DC bin
+    psd_ss = 2 * psd[0 : int(nfft / 2)]
+    psd_ss[0] /= 2
+    freq_ss = freq[int(nfft / 2) :]
+
+    # Need to rotate DS PSD so 0Hz is in middle of graph
+    freq_ds = freq
+    psd_ds = np.concatenate([psd[int(nfft / 2) :], psd[0 : int(nfft / 2)]])
+
+    return [freq_ss, psd_ss, freq_ds, psd_ds]
 
 
-def get_spectrum(data, fs=1, nfft=2**12):
+def get_spectrum(data, fs=1, nfft=2**12, single_sided=True):
     """Get the power spectrum for an input signal."""
-    (freq, psd) = calc_psd(np.array(data), fs=fs, nfft=nfft, single_sided=True)
-    return (freq, psd * fs / nfft)
+    (freq_ss, psd_ss, freq_ds, psd_ds) = calc_psd(np.array(data), fs=fs, nfft=nfft)
+    if single_sided:
+        return (freq_ss, psd_ss * fs / nfft)
+    return (freq_ds, psd_ds * fs / nfft)
 
 
 def plot_spectrum(
@@ -152,6 +161,7 @@ def plot_spectrum(
     window="rectangular",
     no_plot=False,
     yaxis="power",
+    single_sided=True,
     fscale="MHz",
 ):
     """Plot Power Spectrum for input signal."""
@@ -181,23 +191,40 @@ def plot_spectrum(
         "hanning": 1.633,
     }[window]
 
-    (freq, pwr) = get_spectrum(data * windows[window] * wscale, fs=fs, nfft=nfft)
+    (freq, pwr) = get_spectrum(
+        data * windows[window] * wscale, fs=fs, nfft=nfft, single_sided=single_sided
+    )
     full_scale = dBW(dr**2 / 8)
 
-    scalar = 0
-    yunits = "dB"
-    if yaxis.lower() == "fullscale":
-        scalar = full_scale
-        yunits = "dBFS"
+    yaxis_lut = {
+        "power": [0, "dB"],
+        "fullscale": [dBW(dr**2 / 8), "dBFS"],
+        "normalize": [max(dBW(pwr)), "dB Normalized"],
+        "magnitude": [0, "W"],
+    }
 
-    pwr_dB = 10 * np.log10(pwr) - scalar
-
+    lut_key = yaxis.lower()
+    scalar = yaxis_lut[lut_key][0]
+    yunits = yaxis_lut[lut_key][1]
     xscale = fscalar[fscale]
 
-    sndr_stats = sndr_sfdr(pwr, freq, fs, nfft, leak=leak, full_scale=full_scale)
+    psd_out = 10 * np.log10(pwr) - scalar
+    if lut_key in ["magnitude"]:
+        psd_out = pwr
+
+    f_ss = freq
+    psd_ss = pwr
+    if not single_sided:
+        # Get single-sided spectrum for SNDR and Harmonic stats
+        (f_ss, psd_ss) = get_spectrum(
+            data * windows[window] * wscale, fs=fs, nfft=nfft, single_sided=True
+        )
+
+    sndr_stats = sndr_sfdr(psd_ss, f_ss, fs, nfft, leak=leak, full_scale=full_scale)
+
     harm_stats = find_harmonics(
-        pwr,
-        freq,
+        psd_ss,
+        f_ss,
         nfft,
         sndr_stats["sig"]["bin"],
         sndr_stats["sig"]["power"],
@@ -208,16 +235,18 @@ def plot_spectrum(
 
     stats = {**sndr_stats, **harm_stats}
 
+    xmin = 0 if single_sided else -fs / 2e6
+
     if not no_plot:
         plt_str = get_plot_string(stats, full_scale, fs, nfft, window, xscale, fscale)
-
         fig, ax = plt.subplots(figsize=(15, 8))
-        ax.plot(freq / xscale, pwr_dB)
+        ax.plot(freq / xscale, psd_out)
         ax.set_ylabel(f"Power Spectrum ({yunits})", fontsize=18)
         ax.set_xlabel(f"Frequency ({fscale})", fontsize=16)
         ax.set_title("Output Power Spectrum", fontsize=16)
-        ax.set_xlim([0, fs / (2 * xscale)])
-        ax.set_ylim([1.1 * min(pwr_dB), 0])
+        ax.set_xlim([xmin, fs / (2 * xscale)])
+        ax.set_ylim([1.1 * min(psd_out), 1])
+
         ax.annotate(
             plt_str,
             xy=(1, 1),
@@ -233,11 +262,15 @@ def plot_spectrum(
         noise_dB = stats["noise"]["dBHz"] + full_scale
 
         # Add points for harmonics and largest spur
+        if not single_sided:
+            scalar += 3
         for hindex in range(2, harmonics + 1):
             if stats["harm"][hindex]["dB"] > (noise_dB + 3):
+                fharm = stats["harm"][hindex]["freq"]
+                aharm = stats["harm"][hindex]["dB"] - scalar
                 ax.plot(
-                    stats["harm"][hindex]["freq"],
-                    stats["harm"][hindex]["dB"] - scalar,
+                    fharm,
+                    aharm,
                     marker="s",
                     mec="r",
                     ms=8,
@@ -245,16 +278,33 @@ def plot_spectrum(
                     mew=3,
                 )
                 ax.text(
-                    stats["harm"][hindex]["freq"],
-                    stats["harm"][hindex]["dB"] - scalar + 3,
+                    fharm,
+                    aharm + 3,
                     f"HD{hindex}",
                     ha="center",
                     weight="bold",
                 )
+                if not single_sided:
+                    ax.plot(
+                        -fharm,
+                        aharm,
+                        marker="s",
+                        mec="r",
+                        ms=8,
+                        fillstyle="none",
+                        mew=3,
+                    )
+                    ax.text(
+                        -fharm,
+                        aharm + 3,
+                        f"HD{hindex}",
+                        ha="center",
+                        weight="bold",
+                    )
         ax.tick_params(axis="both", which="major", labelsize=14)
         ax.grid()
 
-    return (pwr, stats)
+    return (freq, psd_out, stats)
 
 
 def get_plot_string(stats, full_scale, fs, nfft, window, xscale=1e6, fscale="MHz"):
@@ -300,10 +350,11 @@ def analyze(
     window="rectangular",
     no_plot=False,
     yaxis="fullscale",
+    single_sided=True,
     fscale="MHz",
 ):
     """Perform spectral analysis on input waveform."""
-    (spectrum, stats) = plot_spectrum(
+    (freq, spectrum, stats) = plot_spectrum(
         data,
         fs=fs,
         nfft=nfft,
@@ -313,7 +364,8 @@ def analyze(
         window=window,
         no_plot=no_plot,
         yaxis=yaxis,
+        single_sided=single_sided,
         fscale=fscale,
     )
 
-    return (spectrum, stats)
+    return (freq, spectrum, stats)
