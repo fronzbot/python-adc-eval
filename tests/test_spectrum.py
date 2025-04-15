@@ -3,7 +3,7 @@
 import unittest
 import numpy as np
 from unittest import mock
-from adc_eval import spectrum
+from adc_eval.eval import spectrum
 
 
 class TestSpectrum(unittest.TestCase):
@@ -47,7 +47,7 @@ class TestSpectrum(unittest.TestCase):
         for i in range(0, len(exp_val)):
             self.assertEqual(spectrum.enob(test_val, places=i), exp_val[i])
 
-    @mock.patch("adc_eval.spectrum.calc_psd")
+    @mock.patch("adc_eval.eval.spectrum.calc_psd")
     def test_get_spectrum(self, mock_calc_psd):
         """Test that the get_spectrum method returns power spectrum."""
         fs = 4
@@ -55,7 +55,7 @@ class TestSpectrum(unittest.TestCase):
         data = np.array([1])
         exp_spectrum = np.array([fs / nfft])
 
-        mock_calc_psd.return_value = (None, data)
+        mock_calc_psd.return_value = (None, data, None, data)
 
         self.assertEqual(
             spectrum.get_spectrum(None, fs=fs, nfft=nfft), (None, exp_spectrum)
