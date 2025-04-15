@@ -42,7 +42,8 @@ Given an array of values representing the output of an ADC, the spectrum can be 
         leak=<adjacent bins to filter>,
         window=<window type (rectangular/hanning)>,
         no_plot=<True/False>,
-        yaxis=<"power"/"fullscale">
+        yaxis=<"power"/"fullscale"/"magnitude">,
+        single_sided=<True/False>
     )
 
 
