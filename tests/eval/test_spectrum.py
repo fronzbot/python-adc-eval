@@ -7,55 +7,17 @@ from adc_eval.eval import spectrum
 
 
 RTOL = 0.05
-TEST_SNDR = [
-    np.random.uniform(low=0.1, high=100, size=np.random.randint(4, 31))
+NLEN = 2**18
+NFFT = 2**8
+DATA_SINE = [
+    {
+        "f1": np.random.randint(1, NFFT / 4 - 1),
+        "f2": np.random.randint(NFFT / 4, NFFT / 2 - 1),
+        "a1": np.random.uniform(low=0.5, high=0.8),
+        "a2": np.random.uniform(low=0.1, high=0.4),
+    }
     for _ in range(10)
 ]
-TEST_VALS = [np.random.uniform(low=0.1, high=50) for _ in range(3)]
-PLACES = [i for i in range(6)]
-
-
-@pytest.mark.parametrize("data", TEST_VALS)
-@pytest.mark.parametrize("places", PLACES)
-def test_db_to_pow_places(data, places):
-    """Test the db_to_pow conversion with multiple places."""
-    exp_val = round(10 ** (data / 10), places)
-    assert exp_val == spectrum.db_to_pow(data, places=places)
-
-
-@pytest.mark.parametrize("data", TEST_VALS)
-@pytest.mark.parametrize("places", PLACES)
-def test_db_to_pow_ndarray(data, places):
-    """Test db_to_pow with ndarray input."""
-    data = np.array(data)
-    exp_val = np.array(round(10 ** (data / 10), places))
-    assert exp_val == spectrum.db_to_pow(data, places=places)
-
-
-@pytest.mark.parametrize("data", TEST_VALS)
-@pytest.mark.parametrize("places", PLACES)
-def test_dbW(data, places):
-    """Test the dbW conversion with normal inputs."""
-    exp_val = round(10 * np.log10(data), places)
-    assert exp_val == spectrum.dBW(data, places=places)
-
-
-@pytest.mark.parametrize("data", TEST_VALS)
-@pytest.mark.parametrize("places", PLACES)
-def test_dbW_ndarray(data, places):
-    """Test dbW with ndarray input."""
-    data = np.array(data)
-    exp_val = np.array(round(10 * np.log10(data), places))
-    assert exp_val == spectrum.dBW(data, places=places)
-
-
-@pytest.mark.parametrize("data", TEST_VALS)
-@pytest.mark.parametrize("places", PLACES)
-def test_enob(data, places):
-    """Test enob with muliple places."""
-    exp_val = round(1 / 6.02 * (data - 1.76), places)
-    assert exp_val == spectrum.enob(data, places=places)
-
 
 @mock.patch("adc_eval.eval.spectrum.calc_psd")
 def test_get_spectrum(mock_calc_psd):
@@ -70,76 +32,133 @@ def test_get_spectrum(mock_calc_psd):
     assert (None, exp_spectrum) == spectrum.get_spectrum(None, fs=fs, nfft=nfft)
 
 
-@pytest.mark.parametrize("data", TEST_SNDR)
-def test_sndr_sfdr_outputs(data):
-    """Test the sndr_sfdr method outputs."""
-    freq = np.linspace(0, 1000, np.size(data))
-    full_scale = -3
-    nfft = 2**8
+@pytest.mark.parametrize("data", [np.random.randn(NLEN) for _ in range(10)])
+def test_calc_psd_randomized_dual(data):
+    """Test calc_psd with random data."""
+    (_, _, freq, psd) = spectrum.calc_psd(data, 1, nfft=NFFT)
+    mean_val = np.mean(psd)
+    assert np.isclose(mean_val, 1, rtol=RTOL)
+
+
+@pytest.mark.parametrize("data", [np.random.randn(NLEN) for _ in range(10)])
+def test_calc_psd_randomized_single(data):
+    """Test calc_psd with random data and single-sided."""
+    (freq, psd, _, _) = spectrum.calc_psd(data, 1, nfft=NFFT)
+    mean_val = np.mean(psd)
+    assert np.isclose(mean_val, 2, rtol=RTOL)
+
+
+def test_calc_psd_zeros_dual():
+    """Test calc_psd with zeros."""
+    data = np.zeros(NLEN)
+    (_, _, freq, psd) = spectrum.calc_psd(data, 1, nfft=NFFT)
+    mean_val = np.mean(psd)
+    assert np.isclose(mean_val, 0, rtol=RTOL)
+
+
+def test_calc_psd_zeros_single():
+    """Test calc_psd with zeros and single-sided.."""
+    data = np.zeros(NLEN)
+    (freq, psd, _, _) = spectrum.calc_psd(data, 1, nfft=NFFT)
+    mean_val = np.mean(psd)
+    assert np.isclose(mean_val, 0, rtol=RTOL)
+
+
+def test_calc_psd_ones_dual():
+    """Test calc_psd with ones."""
+    data = np.ones(NLEN)
+    (_, _, freq, psd) = spectrum.calc_psd(data, 1, nfft=NFFT)
+    mean_val = np.mean(psd)
+    assert np.isclose(mean_val, 1, rtol=RTOL)
+
+
+def test_calc_psd_ones_single():
+    """Test calc_psd with ones and single-sided."""
+    data = np.ones(NLEN)
+    (freq, psd, _, _) = spectrum.calc_psd(data, 1, nfft=NFFT)
+    mean_val = np.mean(psd)
+    assert np.isclose(mean_val, 2, rtol=RTOL)
+
+
+@pytest.mark.parametrize("data", DATA_SINE)
+def test_calc_psd_two_sine_dual(data):
+    """Test calc_psd with two sine waves."""
     fs = 1
+    fbin = fs / NFFT
+    f1 = data["f1"] * fbin
+    f2 = data["f2"] * fbin
+    a1 = data["a1"]
+    a2 = data["a2"]
 
-    psd_test = data.copy()
-    psd_exp = data.copy()
+    t = 1 / fs * np.linspace(0, NLEN - 1, NLEN)
+    pin = a1 * np.sin(2 * np.pi * f1 * t) + a2 * np.sin(2 * np.pi * f2 * t)
 
-    result = spectrum.sndr_sfdr(psd_test, freq, fs, nfft, 0, full_scale=full_scale)
+    (_, _, freq, psd) = spectrum.calc_psd(pin, fs, nfft=NFFT)
 
-    data[0] = 0
-    psd_exp[0] = 0
-    data_string = f"F = {freq}\nD = {data}"
+    exp_peaks = [
+        round(a1**2 / 4 * NFFT, 3),
+        round(a2**2 / 4 * NFFT, 3),
+    ]
 
-    indices = np.argsort(psd_exp)
-    sbin = indices[-1]
-    spurbin = indices[-2]
-    sfreq = freq[sbin]
-    spwr = psd_exp[sbin]
+    exp_f1 = [round(-f1, 2), round(f1, 2)]
+    exp_f2 = [round(-f2, 2), round(f2, 2)]
 
-    psd_exp[sbin] = 0
-    spurfreq = freq[spurbin]
-    spurpwr = psd_exp[spurbin]
+    peak1 = max(psd)
+    ipeaks = np.where(psd >= peak1 * (1 - RTOL))[0]
+    fpeaks = [round(freq[ipeaks[0]], 2), round(freq[ipeaks[1]], 2)]
 
-    noise_pwr = np.sum(psd_exp[1:])
+    assertmsg = f"f1={f1} | f2={f2} | a1={a1} | a2={a2}"
 
-    exp_return = {
-        "sig": {
-            "freq": sfreq,
-            "bin": sbin,
-            "power": spwr,
-            "dB": round(10 * np.log10(spwr), 1),
-            "dBFS": round(10 * np.log10(spwr) - full_scale, 1),
-        },
-        "spur": {
-            "freq": spurfreq,
-            "bin": spurbin,
-            "power": spurpwr,
-            "dB": 10 * np.log10(spurpwr),
-            "dBFS": round(10 * np.log10(spurpwr) - full_scale, 1),
-        },
-        "noise": {
-            "floor": 2 * noise_pwr / nfft,
-            "power": noise_pwr,
-            "rms": np.sqrt(noise_pwr),
-            "dBHz": round(10 * np.log10(2 * noise_pwr / nfft) - full_scale, 1),
-            "NSD": round(
-                10 * np.log10(2 * noise_pwr / nfft)
-                - full_scale
-                - 2 * 10 * np.log10(fs / nfft),
-                1,
-            ),
-        },
-        "sndr": {
-            "dBc": round(10 * np.log10(spwr / noise_pwr), 1),
-            "dBFS": round(full_scale - 10 * np.log10(noise_pwr), 1),
-        },
-        "sfdr": {
-            "dBc": round(10 * np.log10(spwr / spurpwr), 1),
-            "dBFS": round(full_scale - 10 * np.log10(spurpwr), 1),
-        },
-        "enob": {
-            "bits": round((full_scale - 10 * np.log10(noise_pwr) - 1.76) / 6.02, 1),
-        },
-    }
+    assert np.allclose(peak1, exp_peaks[0], rtol=RTOL), assertmsg
+    assert np.allclose(fpeaks, exp_f1, rtol=RTOL), assertmsg
 
-    for key, val in exp_return.items():
-        for measure, measure_val in val.items():
-            msg = f"{data_string}\n{key} -> {measure} | Expected {measure_val} | Got {result[key][measure]}"
-            assert np.allclose(measure_val, result[key][measure], rtol=RTOL), msg
+    psd[ipeaks[0]] = 0
+    psd[ipeaks[1]] = 0
+
+    peak2 = max(psd)
+    ipeaks = np.where(psd >= peak2 * (1 - RTOL))[0]
+    fpeaks = [round(freq[ipeaks[0]], 2), round(freq[ipeaks[1]], 2)]
+
+    assert np.allclose(peak2, exp_peaks[1], rtol=RTOL), assertmsg
+    assert np.allclose(fpeaks, exp_f2), assertmsg
+
+
+@pytest.mark.parametrize("data", DATA_SINE)
+def test_calc_psd_two_sine_single(data):
+    """Test calc_psd with two sine waves, single-eided."""
+    fs = 1
+    fbin = fs / NFFT
+    f1 = data["f1"] * fbin
+    f2 = data["f2"] * fbin
+    a1 = data["a1"]
+    a2 = data["a2"]
+
+    t = 1 / fs * np.linspace(0, NLEN - 1, NLEN)
+    pin = a1 * np.sin(2 * np.pi * f1 * t) + a2 * np.sin(2 * np.pi * f2 * t)
+
+    (freq, psd, _, _) = spectrum.calc_psd(pin, fs, nfft=NFFT)
+
+    exp_peaks = [
+        round(a1**2 / 2 * NFFT, 3),
+        round(a2**2 / 2 * NFFT, 3),
+    ]
+    exp_f1 = round(f1, 2)
+    exp_f2 = round(f2, 2)
+
+    peak1 = max(psd)
+    ipeak = np.where(psd == peak1)[0][0]
+    fpeak = round(freq[ipeak], 2)
+
+    assertmsg = f"f1={f1} | f2={f2} | a1={a1} | a2={a2}"
+
+    assert np.allclose(peak1, exp_peaks[0], rtol=RTOL), assertmsg
+    assert np.allclose(fpeak, exp_f1), assertmsg
+
+    psd[ipeak] = 0
+
+    peak2 = max(psd)
+    ipeak = np.where(psd == peak2)[0][0]
+    fpeak = round(freq[ipeak], 2)
+
+    assert np.allclose(peak2, exp_peaks[1], rtol=RTOL), assertmsg
+    assert np.allclose(fpeak, exp_f2), assertmsg

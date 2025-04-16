@@ -65,6 +65,7 @@ Output Plotting
     no_plot=False,
     yaxis="fullscale",
     single_sided=True,
+    fscale="MHz"
 )
 ax = plt.gca()
 ax.set_title("ADC Spectrum")
