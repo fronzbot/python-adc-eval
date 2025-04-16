@@ -7,14 +7,14 @@ import matplotlib.pyplot as plt
 def db_to_pow(value, places=3):
     """Convert dBW to W."""
     if isinstance(value, np.ndarray):
-        return 10 ** (0.1 * value)
+        return round(10 ** (0.1 * value), places)
     return round(10 ** (0.1 * value), places)
 
 
 def dBW(value, places=1):
     """Convert to dBW."""
     if isinstance(value, np.ndarray):
-        return 10 * np.log10(value)
+        return round(10 * np.log10(value), places)
     return round(10 * np.log10(value), places)
 
 
@@ -31,7 +31,7 @@ def sndr_sfdr(spectrum, freq, fs, nfft, leak, full_scale=0):
         spectrum[i] = 0
     bin_sig = np.argmax(spectrum)
     psig = sum(spectrum[i] for i in range(bin_sig - leak, bin_sig + leak + 1))
-    spectrum_n = spectrum
+    spectrum_n = spectrum.copy()
     spectrum_n[bin_sig] = 0
     fbin = fs / nfft
 
@@ -172,10 +172,13 @@ def plot_spectrum(
     }
 
     fscalar = {
+        "uHz": 1e-6,
+        "mHz": 1e-3,
         "Hz": 1,
         "kHz": 1e3,
         "MHz": 1e6,
         "GHz": 1e9,
+        "THz": 1e12,
     }
 
     if window not in windows:
@@ -206,7 +209,13 @@ def plot_spectrum(
     lut_key = yaxis.lower()
     scalar = yaxis_lut[lut_key][0]
     yunits = yaxis_lut[lut_key][1]
-    xscale = fscalar[fscale]
+    try:
+        xscale = fscalar[fscale]
+    except KeyError:
+        print(
+            f"WARNING: {fscale} not a valid option for fscale. Valid inputs are {fscalar.keys()}."
+        )
+        print("         Defaulting to Hz.")
 
     psd_out = 10 * np.log10(pwr) - scalar
     if lut_key in ["magnitude"]:
