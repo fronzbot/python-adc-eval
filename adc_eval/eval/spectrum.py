@@ -36,6 +36,23 @@ def get_spectrum(data, fs=1, nfft=2**12, single_sided=True):
     return (freq_ds, psd_ds * fs / nfft)
 
 
+def window_data(data, window="rectangular"):
+    """Applies a window to the time-domain data."""
+    wsize = data.size
+    windows = {
+        "rectangular": (np.ones(wsize), 1.0),
+        "hanning": (np.hanning(wsize), 1.633)
+    }
+    
+    if window not in windows:
+        print(f"WARNING: {window} not implemented. Defaulting to 'rectangular'.")
+        window = "rectangular"
+    
+    wscale = windows[window][1]
+    
+    return data * windows[window][0] * wscale
+
+
 def plot_spectrum(
     data,
     fs=1,
@@ -50,11 +67,6 @@ def plot_spectrum(
     fscale="MHz",
 ):
     """Plot Power Spectrum for input signal."""
-    wsize = data.size
-    windows = {
-        "rectangular": np.ones(wsize),
-        "hanning": np.hanning(wsize),
-    }
 
     fscalar = {
         "uHz": 1e-6,
@@ -65,25 +77,18 @@ def plot_spectrum(
         "GHz": 1e9,
         "THz": 1e12,
     }
-
-    if window not in windows:
-        print(f"WARNING: {window} not implemented. Defaulting to 'rectangular'.")
-        window = "rectangular"
-
     if fscale not in fscalar:
         print(f"WARNING: {fscale} not implemented. Defaulting to 'MHz'.")
         fscale = "MHz"
 
-    wscale = {
-        "rectangular": 1.0,
-        "hanning": 1.633,
-    }[window]
-
-    (freq, pwr) = get_spectrum(
-        data * windows[window] * wscale, fs=fs, nfft=nfft, single_sided=single_sided
-    )
+    # Window the data and get the single or dual-sided spectrum
+    wdata = window_data(data, window=window)
+    (freq, pwr) = get_spectrum(wdata, fs=fs, nfft=nfft, single_sided=single_sided)
+    
+    # Calculate the fullscale range of the spectrum in Watts
     full_scale = calc.dBW(dr**2 / 8)
 
+    # Determine what y-axis scaling to use
     yaxis_lut = {
         "power": [0, "dB"],
         "fullscale": [full_scale, "dBFS"],
@@ -102,10 +107,14 @@ def plot_spectrum(
         )
         print("         Defaulting to Hz.")
 
+    # Convert to dBW and perform scalar based on y-axis scaling input
     psd_out = calc.dBW(pwr, places=3) - scalar
+    
+    # Use Watts if magnitude y-axis scaling is desired
     if lut_key in ["magnitude"]:
         psd_out = pwr
 
+    # Get single-sided spectrum for consistent SNDR and harmonic calculation behavior
     f_ss = freq
     psd_ss = pwr
     if not single_sided:
@@ -115,7 +124,6 @@ def plot_spectrum(
         )
 
     sndr_stats = calc.sndr_sfdr(psd_ss, f_ss, fs, nfft, leak=leak, full_scale=full_scale)
-
     harm_stats = calc.find_harmonics(
         psd_ss,
         f_ss,
@@ -127,10 +135,13 @@ def plot_spectrum(
         fscale=xscale,
     )
 
+    # Merge the two stat dictionaries into one for convenient access
     stats = {**sndr_stats, **harm_stats}
 
+    # Change the x-axis minimum value based on single or dual-sided selection
     xmin = 0 if single_sided else -fs / 2e6
 
+    # If plotting, prep plot and generate all required axis strings
     if not no_plot:
         plt_str = calc.get_plot_string(stats, full_scale, fs, nfft, window, xscale, fscale)
         fig, ax = plt.subplots(figsize=(15, 8))

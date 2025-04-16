@@ -27,9 +27,22 @@ def test_get_spectrum(mock_calc_psd):
     data = np.array([1])
     exp_spectrum = np.array([fs / nfft])
 
-    mock_calc_psd.return_value = (None, data, None, data)
+    mock_calc_psd.return_value = (None, data, None, 2*data)
 
-    assert (None, exp_spectrum) == spectrum.get_spectrum(None, fs=fs, nfft=nfft)
+    assert (None, exp_spectrum) == spectrum.get_spectrum(None, fs=fs, nfft=nfft, single_sided=True)
+
+
+@mock.patch("adc_eval.eval.spectrum.calc_psd")
+def test_get_spectrum_dual(mock_calc_psd):
+    """Test that the get_spectrum method returns dual-sided power spectrum."""
+    fs = 4
+    nfft = 3
+    data = np.array([1])
+    exp_spectrum = np.array([fs / nfft])
+
+    mock_calc_psd.return_value = (None, data, None, 2*data)
+
+    assert (None, 2*exp_spectrum) == spectrum.get_spectrum(None, fs=fs, nfft=nfft, single_sided=False)
 
 
 @pytest.mark.parametrize("data", [np.random.randn(NLEN) for _ in range(10)])
