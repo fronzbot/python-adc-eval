@@ -2,122 +2,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-def db_to_pow(value, places=3):
-    """Convert dBW to W."""
-    if isinstance(value, np.ndarray):
-        return 10 ** (0.1 * value)
-    return round(10 ** (0.1 * value), places)
-
-
-def dBW(value, places=1):
-    """Convert to dBW."""
-    if isinstance(value, np.ndarray):
-        return 10 * np.log10(value)
-    return round(10 * np.log10(value), places)
-
-
-def enob(sndr, places=1):
-    """Return ENOB for given SNDR."""
-    return round((sndr - 1.76) / 6.02, places)
-
-
-def sndr_sfdr(spectrum, freq, fs, nfft, leak, full_scale=0):
-    """Get SNDR and SFDR."""
-
-    # Zero the DC bin
-    for i in range(0, leak + 1):
-        spectrum[i] = 0
-    bin_sig = np.argmax(spectrum)
-    psig = sum(spectrum[i] for i in range(bin_sig - leak, bin_sig + leak + 1))
-    spectrum_n = spectrum
-    spectrum_n[bin_sig] = 0
-    fbin = fs / nfft
-
-    for i in range(bin_sig - leak, bin_sig + leak + 1):
-        spectrum_n[i] = 0
-
-    bin_spur = np.argmax(spectrum_n)
-    pspur = spectrum[bin_spur]
-
-    noise_power = sum(spectrum_n)
-    noise_floor = 2 * noise_power / nfft
-
-    stats = {}
-
-    stats["sig"] = {
-        "freq": freq[bin_sig],
-        "bin": bin_sig,
-        "power": psig,
-        "dB": dBW(psig),
-        "dBFS": round(dBW(psig) - full_scale, 1),
-    }
-
-    stats["spur"] = {
-        "freq": freq[bin_spur],
-        "bin": bin_spur,
-        "power": pspur,
-        "dB": dBW(pspur),
-        "dBFS": round(dBW(pspur) - full_scale, 1),
-    }
-    stats["noise"] = {
-        "floor": noise_floor,
-        "power": noise_power,
-        "rms": np.sqrt(noise_power),
-        "dBHz": round(dBW(noise_floor, 3) - full_scale, 1),
-        "NSD": round(dBW(noise_floor, 3) - full_scale - 2 * dBW(fbin, 3), 1),
-    }
-    stats["sndr"] = {
-        "dBc": dBW(psig / noise_power),
-        "dBFS": round(full_scale - dBW(noise_power), 1),
-    }
-    stats["sfdr"] = {
-        "dBc": dBW(psig / pspur),
-        "dBFS": round(full_scale - dBW(pspur), 1),
-    }
-    stats["enob"] = {"bits": enob(stats["sndr"]["dBFS"])}
-
-    return stats
-
-
-def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20, fscale=1e6):
-    """Get the harmonic contents of the data."""
-    harm_stats = {"harm": {}}
-    harm_index = 2
-    for harm in bin_sig * np.arange(2, harms + 1):
-        harm_stats["harm"][harm_index] = {}
-        zone = np.floor(harm / (nfft / 2)) + 1
-        if zone % 2 == 0:
-            bin_harm = int(nfft / 2 - (harm - (zone - 1) * nfft / 2))
-        else:
-            bin_harm = int(harm - (zone - 1) * nfft / 2)
-
-        # Make sure we pick the max bin where power is maximized; due to spectral leakage
-        # if bin_harm == nfft/2, set to bin of 0
-        if bin_harm == nfft / 2:
-            bin_harm = 0
-        pwr_max = spectrum[bin_harm]
-        bin_harm_max = bin_harm
-        for i in range(bin_harm - leak, bin_harm + leak + 1):
-            try:
-                pwr = spectrum[i]
-                if pwr > pwr_max:
-                    bin_harm_max = i
-                    pwr_max = pwr
-            except IndexError:
-                # bin + leakage out of bounds, so stop looking
-                break
-
-        harm_stats["harm"][harm_index]["bin"] = bin_harm_max
-        harm_stats["harm"][harm_index]["power"] = pwr_max
-        harm_stats["harm"][harm_index]["freq"] = round(freq[bin_harm] / fscale, 1)
-        harm_stats["harm"][harm_index]["dBc"] = dBW(pwr_max / psig)
-        harm_stats["harm"][harm_index]["dB"] = dBW(pwr_max)
-
-        harm_index = harm_index + 1
-
-    return harm_stats
+from adc_eval.eval import calc
 
 
 def calc_psd(data, fs, nfft=2**12):
@@ -151,6 +36,28 @@ def get_spectrum(data, fs=1, nfft=2**12, single_sided=True):
     return (freq_ds, psd_ds * fs / nfft)
 
 
+def window_data(data, window="rectangular"):
+    """Applies a window to the time-domain data."""
+    try:
+        wsize = data.size
+    except AttributeError:
+        data = np.array(data)
+        wsize = data.size
+
+    windows = {
+        "rectangular": (np.ones(wsize), 1.0),
+        "hanning": (np.hanning(wsize), 1.633),
+    }
+
+    if window not in windows:
+        print(f"WARNING: {window} not implemented. Defaulting to 'rectangular'.")
+        window = "rectangular"
+
+    wscale = windows[window][1]
+
+    return data * windows[window][0] * wscale
+
+
 def plot_spectrum(
     data,
     fs=1,
@@ -162,67 +69,45 @@ def plot_spectrum(
     no_plot=False,
     yaxis="power",
     single_sided=True,
-    fscale="MHz",
+    fscale=("MHz", 1e6),
 ):
     """Plot Power Spectrum for input signal."""
-    wsize = data.size
-    windows = {
-        "rectangular": np.ones(wsize),
-        "hanning": np.hanning(wsize),
-    }
+    (freq, pwr) = get_spectrum(data, fs=fs, nfft=nfft, single_sided=single_sided)
 
-    fscalar = {
-        "Hz": 1,
-        "kHz": 1e3,
-        "MHz": 1e6,
-        "GHz": 1e9,
-    }
+    # Calculate the fullscale range of the spectrum in Watts
+    full_scale = calc.dBW(dr**2 / 8)
 
-    if window not in windows:
-        print(f"WARNING: {window} not implemented. Defaulting to 'rectangular'.")
-        window = "rectangular"
-
-    if fscale not in fscalar:
-        print(f"WARNING: {fscale} not implemented. Defaulting to 'MHz'.")
-        fscale = "MHz"
-
-    wscale = {
-        "rectangular": 1.0,
-        "hanning": 1.633,
-    }[window]
-
-    (freq, pwr) = get_spectrum(
-        data * windows[window] * wscale, fs=fs, nfft=nfft, single_sided=single_sided
-    )
-    full_scale = dBW(dr**2 / 8)
-
+    # Determine what y-axis scaling to use
     yaxis_lut = {
         "power": [0, "dB"],
-        "fullscale": [dBW(dr**2 / 8), "dBFS"],
-        "normalize": [max(dBW(pwr)), "dB Normalized"],
+        "fullscale": [full_scale, "dBFS"],
+        "normalize": [max(calc.dBW(pwr)), "dB Normalized"],
         "magnitude": [0, "W"],
     }
 
     lut_key = yaxis.lower()
     scalar = yaxis_lut[lut_key][0]
     yunits = yaxis_lut[lut_key][1]
-    xscale = fscalar[fscale]
+    xscale = fscale[1]
 
-    psd_out = 10 * np.log10(pwr) - scalar
+    # Convert to dBW and perform scalar based on y-axis scaling input
+    psd_out = calc.dBW(pwr, places=3) - scalar
+
+    # Use Watts if magnitude y-axis scaling is desired
     if lut_key in ["magnitude"]:
         psd_out = pwr
 
+    # Get single-sided spectrum for consistent SNDR and harmonic calculation behavior
     f_ss = freq
     psd_ss = pwr
     if not single_sided:
         # Get single-sided spectrum for SNDR and Harmonic stats
-        (f_ss, psd_ss) = get_spectrum(
-            data * windows[window] * wscale, fs=fs, nfft=nfft, single_sided=True
-        )
+        (f_ss, psd_ss) = get_spectrum(data, fs=fs, nfft=nfft, single_sided=True)
 
-    sndr_stats = sndr_sfdr(psd_ss, f_ss, fs, nfft, leak=leak, full_scale=full_scale)
-
-    harm_stats = find_harmonics(
+    sndr_stats = calc.sndr_sfdr(
+        psd_ss, f_ss, fs, nfft, leak=leak, full_scale=full_scale
+    )
+    harm_stats = calc.find_harmonics(
         psd_ss,
         f_ss,
         nfft,
@@ -233,16 +118,21 @@ def plot_spectrum(
         fscale=xscale,
     )
 
+    # Merge the two stat dictionaries into one for convenient access
     stats = {**sndr_stats, **harm_stats}
 
+    # Change the x-axis minimum value based on single or dual-sided selection
     xmin = 0 if single_sided else -fs / 2e6
 
+    # If plotting, prep plot and generate all required axis strings
     if not no_plot:
-        plt_str = get_plot_string(stats, full_scale, fs, nfft, window, xscale, fscale)
+        plt_str = calc.get_plot_string(
+            stats, full_scale, fs, nfft, window, xscale, fscale[0]
+        )
         fig, ax = plt.subplots(figsize=(15, 8))
         ax.plot(freq / xscale, psd_out)
         ax.set_ylabel(f"Power Spectrum ({yunits})", fontsize=18)
-        ax.set_xlabel(f"Frequency ({fscale})", fontsize=16)
+        ax.set_xlabel(f"Frequency ({fscale[0]})", fontsize=16)
         ax.set_title("Output Power Spectrum", fontsize=16)
         ax.set_xlim([xmin, fs / (2 * xscale)])
         ax.set_ylim([1.1 * min(psd_out), 1])
@@ -307,39 +197,6 @@ def plot_spectrum(
     return (freq, psd_out, stats)
 
 
-def get_plot_string(stats, full_scale, fs, nfft, window, xscale=1e6, fscale="MHz"):
-    """Generate plot string from stats dict."""
-
-    plt_str = "==== FFT ====\n"
-    plt_str += f"NFFT = {nfft}\n"
-    plt_str += f"fbin = {round(fs/nfft / 1e3, 2)} kHz\n"
-    plt_str += f"window = {window}\n"
-    plt_str += "\n"
-    plt_str += "==== Signal ====\n"
-    plt_str += f"FullScale = {full_scale} dB\n"
-    plt_str += f"Psig = {stats['sig']['dBFS']} dBFS ({stats['sig']['dB']} dB)\n"
-    plt_str += f"fsig = {round(stats['sig']['freq']/xscale, 2)} {fscale}\n"
-    plt_str += f"fsamp = {round(fs/xscale, 2)} {fscale}\n"
-    plt_str += "\n"
-    plt_str += "====  SNDR/SFDR  ====\n"
-    plt_str += f"ENOB = {stats['enob']['bits']} bits\n"
-    plt_str += f"SNDR = {stats['sndr']['dBFS']} dBFS ({stats['sndr']['dBc']} dBc)\n"
-    plt_str += f"SFDR = {stats['sfdr']['dBFS']} dBFS ({stats['sfdr']['dBc']} dBc)\n"
-    plt_str += f"Pspur = {stats['spur']['dBFS']} dBFS\n"
-    plt_str += f"fspur = {round(stats['spur']['freq']/xscale, 2)} {fscale}\n"
-    plt_str += f"Noise Floor = {stats['noise']['dBHz']} dBFS\n"
-    plt_str += f"NSD = {stats['noise']['NSD']} dBFS\n"
-    plt_str += "\n"
-    plt_str += "==== Harmonics ====\n"
-
-    for hindex, hdata in stats["harm"].items():
-        plt_str += f"HD{hindex} = {round(hdata['dB'] - full_scale, 1)} dBFS @ {hdata['freq']} {fscale}\n"
-
-    plt_str += "\n"
-
-    return plt_str
-
-
 def analyze(
     data,
     nfft,
@@ -354,8 +211,24 @@ def analyze(
     fscale="MHz",
 ):
     """Perform spectral analysis on input waveform."""
+    fscalar = {
+        "uHz": 1e-6,
+        "mHz": 1e-3,
+        "Hz": 1,
+        "kHz": 1e3,
+        "MHz": 1e6,
+        "GHz": 1e9,
+        "THz": 1e12,
+    }
+    if fscale not in fscalar:
+        print(f"WARNING: {fscale} not implemented. Defaulting to 'MHz'.")
+        fscale = "MHz"
+
+    # Window the data
+    wdata = window_data(data, window=window)
+
     (freq, spectrum, stats) = plot_spectrum(
-        data,
+        wdata,
         fs=fs,
         nfft=nfft,
         dr=dr,
@@ -365,7 +238,7 @@ def analyze(
         no_plot=no_plot,
         yaxis=yaxis,
         single_sided=single_sided,
-        fscale=fscale,
+        fscale=(fscale, fscalar[fscale]),
     )
 
     return (freq, spectrum, stats)
