@@ -5,7 +5,28 @@ from tqdm import tqdm
 
 
 class Simulator:
-    """Class for handling simulation functions."""
+    """
+    Class for handling simulation functions.
+
+    Parameters
+    ----------
+    adc_obj : ADC.__class__
+        An ADC object from the adc_eval.eval.adc class list.
+    xarray : ndarray
+        Input signal array to simulate the adc_obj with.
+
+
+    Attributes
+    ----------
+    out : ndarray of ADC output values.
+    adc : Reference to the input adc_obj.
+    vin : xarray with global signal errors included as set by adj_obj.
+
+    Methods
+    -------
+    run
+
+    """
 
     def __init__(self, adc_obj, xarray):
         """Initialize the simulator class."""
@@ -19,7 +40,7 @@ class Simulator:
         return np.array(self.dval)
 
     def calc_error(self, vin):
-        """Using the adc obj, calculates global signal error."""
+        """Using the adc_obj, calculates global signal error before simulation."""
         vinx = vin
 
         # First calculate gain error

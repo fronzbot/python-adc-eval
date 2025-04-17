@@ -4,27 +4,90 @@ import numpy as np
 
 
 def db_to_pow(value, places=3):
-    """Convert dBW to W."""
+    """
+    Convert dBW to W.
+
+    Parameters
+    ----------
+    value : float or ndarray
+        Value to convert to power, in dBW.
+    places : int, optional
+        Number of places to round output value to. Default is 3.
+
+    Returns
+    -------
+    float or ndarray
+        Returns either the rounded and converted value, or the ndarray
+    """
     if isinstance(value, np.ndarray):
         return np.round(10 ** (0.1 * value), places)
     return round(10 ** (0.1 * value), places)
 
 
 def dBW(value, places=1):
-    """Convert to dBW."""
+    """
+    Convert to dBW.
+
+    Parameters
+    ----------
+    value : float or ndarray
+        Value to convert to dBW, in W.
+    places : int, optional
+        Number of places to round output value to. Default is 1.
+
+    Returns
+    -------
+    float or ndarray
+        Returns either the rounded and converted value, or the ndarray
+    """
     if isinstance(value, np.ndarray):
         return np.round(10 * np.log10(value), places)
     return round(10 * np.log10(value), places)
 
 
 def enob(sndr, places=1):
-    """Return ENOB for given SNDR."""
+    """
+    Return ENOB for given SNDR.
+
+    Parameters
+    ----------
+    sndr : float
+        SNDR value in dBW to convert to ENOB.
+    places : int, optional
+        Number of places to round output value to. Default is 1.
+
+    Returns
+    -------
+    float or ndarray
+        Returns either the rounded and converted value, or the ndarray
+    """
     return round((sndr - 1.76) / 6.02, places)
 
 
-def sndr_sfdr(spectrum, freq, fs, nfft, leak, full_scale=0):
-    """Get SNDR and SFDR."""
+def sndr_sfdr(spectrum, freq, fs, nfft, leak=0, full_scale=0):
+    """
+    Get SNDR and SFDR.
 
+    Parameters
+    ----------
+    spectrum : ndarray
+        Power spectrum as ndarray in units of Watts.
+    freq : ndarray
+        Array of frequencies for the input power spectrum.
+    fs : float
+        Sample frequency of power spectrum in Hz.
+    nfft : int
+        Number of samples in the FFT.
+    leak : int, optional
+        Number of leakage bins to consider when looking for peaks. Default is 0.
+    full_scale : float, optional
+        Full scale reference value for spectrum in Watts.
+
+    Returns
+    -------
+    dict
+        Returns a dictionary of computed stats.
+    """
     # Zero the DC bin
     for i in range(0, leak + 1):
         spectrum[i] = 0
@@ -81,7 +144,33 @@ def sndr_sfdr(spectrum, freq, fs, nfft, leak, full_scale=0):
 
 
 def find_harmonics(spectrum, freq, nfft, bin_sig, psig, harms=5, leak=20, fscale=1e6):
-    """Get the harmonic contents of the data."""
+    """
+    Get the harmonic contents of the data.
+
+    Parameters
+    ----------
+    spectrum : ndarray
+        Power spectrum as ndarray in units of Watts.
+    freq : ndarray
+        Array of frequencies for the input power spectrum.
+    nfft : int
+        Number of samples in the FFT.
+    bin_sig : int
+        Frequency bin of the dominant signal.
+    psig : float
+        Power of dominant signal in spectrum.
+    harms : int, optional
+        Number of input harmonics to calculate. Default is 5.
+    leak : int, optional
+        Number of leakage bins to look at when finding harmonics. Default is 20.
+    fscale : float, optional
+        Value to scale frequencies by in Hz. Default is 1MHz.
+
+    Returns
+    -------
+    dict
+        Returns a dictionary of computed stats.
+    """
     harm_stats = {"harm": {}}
     harm_index = 2
     for harm in bin_sig * np.arange(2, harms + 1):

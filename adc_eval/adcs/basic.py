@@ -14,8 +14,6 @@ class ADC:
     """
     Generic ADC Class.
 
-    ...
-
     Parameters
     ----------
     nbits : int, default=8

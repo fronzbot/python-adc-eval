@@ -12,8 +12,6 @@ class CICDecimate:
     """
     Generic CIC Decimator Object.
 
-    ...
-
     Parameters
     ----------
     dec : int, default=2
@@ -137,8 +135,6 @@ class CICDecimate:
 class FIRLowPass:
     """
     Generic FIR Low Pass Filter.
-
-    ...
 
     Parameters
     ----------
