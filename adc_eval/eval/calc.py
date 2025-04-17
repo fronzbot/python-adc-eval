@@ -1,4 +1,5 @@
 """Spectral analysis helper module."""
+
 import numpy as np
 
 

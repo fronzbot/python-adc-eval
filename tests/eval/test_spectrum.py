@@ -19,6 +19,7 @@ DATA_SINE = [
     for _ in range(10)
 ]
 
+
 @mock.patch("adc_eval.eval.spectrum.calc_psd")
 def test_get_spectrum(mock_calc_psd):
     """Test that the get_spectrum method returns power spectrum."""
@@ -27,9 +28,11 @@ def test_get_spectrum(mock_calc_psd):
     data = np.array([1])
     exp_spectrum = np.array([fs / nfft])
 
-    mock_calc_psd.return_value = (None, data, None, 2*data)
+    mock_calc_psd.return_value = (None, data, None, 2 * data)
 
-    assert (None, exp_spectrum) == spectrum.get_spectrum(None, fs=fs, nfft=nfft, single_sided=True)
+    assert (None, exp_spectrum) == spectrum.get_spectrum(
+        None, fs=fs, nfft=nfft, single_sided=True
+    )
 
 
 @mock.patch("adc_eval.eval.spectrum.calc_psd")
@@ -40,9 +43,11 @@ def test_get_spectrum_dual(mock_calc_psd):
     data = np.array([1])
     exp_spectrum = np.array([fs / nfft])
 
-    mock_calc_psd.return_value = (None, data, None, 2*data)
+    mock_calc_psd.return_value = (None, data, None, 2 * data)
 
-    assert (None, 2*exp_spectrum) == spectrum.get_spectrum(None, fs=fs, nfft=nfft, single_sided=False)
+    assert (None, 2 * exp_spectrum) == spectrum.get_spectrum(
+        None, fs=fs, nfft=nfft, single_sided=False
+    )
 
 
 @pytest.mark.parametrize("data", [np.random.randn(NLEN) for _ in range(10)])
@@ -181,7 +186,7 @@ def test_window_data_as_list():
     """Tests the window_data function when given a list instead of numpy array."""
     data = np.random.rand(NLEN).tolist()
     wdata = spectrum.window_data(data, window="rectangular")
-    
+
     assert type(data) == type(list())
     assert type(wdata) == type(np.ndarray([]))
 
@@ -191,7 +196,7 @@ def test_window_data_bad_window_type(capfd):
     data = np.random.rand(NLEN)
     wdata = spectrum.window_data(data, window="foobar")
     captured = capfd.readouterr()
-    
+
     assert data.size == wdata.size
     assert data.all() == wdata.all()
     assert "WARNING" in captured.out
@@ -214,7 +219,7 @@ def test_analyze_valid_input_scalar(mock_plot_spectrum):
     """Tests the valid input scalar keys."""
     mock_plot_spectrum.return_value = (None, None, None)
     mock_plot_spectrum.side_effect = lambda *args, **kwargs: (kwargs, None, None)
-    
+
     test_vals = {
         "Hz": 1,
         "kHz": 1e3,
@@ -236,10 +241,10 @@ def test_analyze_no_plot(mock_sndr_sfdr, mock_find_harmonics):
     }
     data_harms = {"harmonics": 3}
     exp_stats = {**data_sndr, **data_harms}
-    
+
     mock_sndr_sfdr.return_value = data_sndr
     mock_find_harmonics = data_harms
-    
+
     (freq, psd, stats) = spectrum.analyze(
         data,
         fs=1,
@@ -253,10 +258,10 @@ def test_analyze_no_plot(mock_sndr_sfdr, mock_find_harmonics):
         single_sided=True,
         fscale="Hz",
     )
-    
-    assert freq.all() == np.linspace(0, 1, int(NFFT/2)).all()
-    assert psd.size == int(NFFT/2)
-    
+
+    assert freq.all() == np.linspace(0, 1, int(NFFT / 2)).all()
+    assert psd.size == int(NFFT / 2)
+
     for key, value in stats.items():
         assert value == exp_stats[key]
 
@@ -271,10 +276,10 @@ def test_analyze_no_plot_dual(mock_sndr_sfdr, mock_find_harmonics):
     }
     data_harms = {"harmonics": 3}
     exp_stats = {**data_sndr, **data_harms}
-    
+
     mock_sndr_sfdr.return_value = data_sndr
     mock_find_harmonics = data_harms
-    
+
     (freq, psd, stats) = spectrum.analyze(
         data,
         fs=1,
@@ -288,8 +293,8 @@ def test_analyze_no_plot_dual(mock_sndr_sfdr, mock_find_harmonics):
         single_sided=False,
         fscale="Hz",
     )
-    
-    assert freq.all() == np.linspace(-0.5, 0.5, NFFT-1).all()
+
+    assert freq.all() == np.linspace(-0.5, 0.5, NFFT - 1).all()
     assert psd.size == NFFT
     for key, value in stats.items():
         assert value == exp_stats[key]
@@ -305,10 +310,10 @@ def test_analyze_no_plot_magnitude(mock_sndr_sfdr, mock_find_harmonics):
     }
     data_harms = {"harmonics": 3}
     exp_stats = {**data_sndr, **data_harms}
-    
+
     mock_sndr_sfdr.return_value = data_sndr
     mock_find_harmonics = data_harms
-    
+
     (freq, psd, stats) = spectrum.analyze(
         data,
         fs=1,
@@ -322,8 +327,8 @@ def test_analyze_no_plot_magnitude(mock_sndr_sfdr, mock_find_harmonics):
         single_sided=True,
         fscale="Hz",
     )
-    
-    assert freq.all() == np.linspace(0, 1, int(NFFT/2)).all()
-    assert psd.size == int(NFFT/2)
+
+    assert freq.all() == np.linspace(0, 1, int(NFFT / 2)).all()
+    assert psd.size == int(NFFT / 2)
     for key, value in stats.items():
         assert value == exp_stats[key]

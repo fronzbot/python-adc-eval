@@ -46,15 +46,15 @@ def window_data(data, window="rectangular"):
 
     windows = {
         "rectangular": (np.ones(wsize), 1.0),
-        "hanning": (np.hanning(wsize), 1.633)
+        "hanning": (np.hanning(wsize), 1.633),
     }
-    
+
     if window not in windows:
         print(f"WARNING: {window} not implemented. Defaulting to 'rectangular'.")
         window = "rectangular"
-    
+
     wscale = windows[window][1]
-    
+
     return data * windows[window][0] * wscale
 
 
@@ -73,7 +73,7 @@ def plot_spectrum(
 ):
     """Plot Power Spectrum for input signal."""
     (freq, pwr) = get_spectrum(data, fs=fs, nfft=nfft, single_sided=single_sided)
-    
+
     # Calculate the fullscale range of the spectrum in Watts
     full_scale = calc.dBW(dr**2 / 8)
 
@@ -92,7 +92,7 @@ def plot_spectrum(
 
     # Convert to dBW and perform scalar based on y-axis scaling input
     psd_out = calc.dBW(pwr, places=3) - scalar
-    
+
     # Use Watts if magnitude y-axis scaling is desired
     if lut_key in ["magnitude"]:
         psd_out = pwr
@@ -104,7 +104,9 @@ def plot_spectrum(
         # Get single-sided spectrum for SNDR and Harmonic stats
         (f_ss, psd_ss) = get_spectrum(data, fs=fs, nfft=nfft, single_sided=True)
 
-    sndr_stats = calc.sndr_sfdr(psd_ss, f_ss, fs, nfft, leak=leak, full_scale=full_scale)
+    sndr_stats = calc.sndr_sfdr(
+        psd_ss, f_ss, fs, nfft, leak=leak, full_scale=full_scale
+    )
     harm_stats = calc.find_harmonics(
         psd_ss,
         f_ss,
@@ -124,7 +126,9 @@ def plot_spectrum(
 
     # If plotting, prep plot and generate all required axis strings
     if not no_plot:
-        plt_str = calc.get_plot_string(stats, full_scale, fs, nfft, window, xscale, fscale[0])
+        plt_str = calc.get_plot_string(
+            stats, full_scale, fs, nfft, window, xscale, fscale[0]
+        )
         fig, ax = plt.subplots(figsize=(15, 8))
         ax.plot(freq / xscale, psd_out)
         ax.set_ylabel(f"Power Spectrum ({yunits})", fontsize=18)
@@ -219,10 +223,10 @@ def analyze(
     if fscale not in fscalar:
         print(f"WARNING: {fscale} not implemented. Defaulting to 'MHz'.")
         fscale = "MHz"
-    
+
     # Window the data
     wdata = window_data(data, window=window)
-    
+
     (freq, spectrum, stats) = plot_spectrum(
         wdata,
         fs=fs,

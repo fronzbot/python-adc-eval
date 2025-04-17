@@ -4,6 +4,7 @@ import numpy as np
 from scipy.signal import remez, freqz
 import matplotlib.pyplot as plt
 from adc_eval.eval import spectrum
+from adc_eval.eval import calc
 
 
 class CICDecimate:
@@ -215,7 +216,7 @@ class FIRLowPass:
     def response(self, fft, no_plot=False):
         """Plots the frequency response of the pre-decimated filter."""
         freq, mag = freqz(self.coeffs, [1], worN=fft, fs=self.fs)
-        yfft = spectrum.dBW(np.abs(mag))
+        yfft = calc.dBW(np.abs(mag))
         if not no_plot:
             fig, ax = plt.subplots(figsize=(15, 8))
             ax.plot(freq / 1e6, yfft)

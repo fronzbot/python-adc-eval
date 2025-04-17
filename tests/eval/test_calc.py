@@ -139,9 +139,7 @@ def test_find_harmonics_on_fft_bound(harms, nfft):
     nbin = nfft / 8
     (freq, pwr) = gen_spectrum(nbin, harms, nfft)
 
-    stats = calc.find_harmonics(
-        pwr, freq, nfft, nbin, AMPLITUDE, harms=harms, leak=0
-    )
+    stats = calc.find_harmonics(pwr, freq, nfft, nbin, AMPLITUDE, harms=harms, leak=0)
 
     exp_bin = {
         2: 2 * nbin,
