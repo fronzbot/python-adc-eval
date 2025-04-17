@@ -68,3 +68,14 @@ def test_noise_length(std):
 
     # Now check that noise is gaussian
     assert shapiro.pvalue < 0.01
+
+
+@pytest.mark.parametrize("nlen", np.random.randint(2, 2**12, 3))
+@pytest.mark.parametrize("mag", np.random.uniform(0.1, 100, 3))
+def test_impulse(nlen, mag):
+    """Test impulse generation with random length and amplitude."""
+    data = signals.impulse(nlen, mag)
+
+    assert data.size == nlen
+    assert data[0] == mag
+    assert data[1:].all() == 0

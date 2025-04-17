@@ -3,6 +3,7 @@
 import numpy as np
 from scipy.signal import remez, freqz
 import matplotlib.pyplot as plt
+from adc_eval import signals
 from adc_eval.eval import spectrum
 from adc_eval.eval import calc
 
@@ -38,12 +39,34 @@ class CICDecimate:
 
     def __init__(self, dec=2, order=1, fs=1):
         """Initialize the CIC filter."""
-        self.dec = dec
-        self.order = order
+        self._dec = dec
+        self._order = order
         self.fs = fs
-        self.gain = self.dec**self.order
+        self.gain = dec**order
         self._xout = None
         self._xfilt = None
+
+    @property
+    def dec(self):
+        """Returns the decimation factor."""
+        return self._dec
+
+    @dec.setter
+    def dec(self, value):
+        """Sets the decimation factor."""
+        self._dec = value
+        self.gain = value**self._order
+
+    @property
+    def order(self):
+        """Returns the order of the filter."""
+        return self._order
+
+    @order.setter
+    def order(self, value):
+        """Sets the filter order."""
+        self._order = value
+        self.gain = self.dec**value
 
     @property
     def out(self):
@@ -70,9 +93,11 @@ class CICDecimate:
 
         self._xfilt = ycomb / self.gain
 
-    def decimate(self):
+    def decimate(self, xarray=None):
         """decimation routine."""
-        self._xout = self._xfilt[:: self.dec]
+        if xarray is None:
+            xarray = self._xfilt
+        self._xout = xarray[:: self.dec]
 
     def run(self, xarray):
         """Runs filtering and decimation on input list."""
@@ -81,8 +106,7 @@ class CICDecimate:
 
     def response(self, fft, no_plot=False):
         """Plots the frequency response of the pre-decimated filter."""
-        xin = np.zeros(fft)
-        xin[0] = 1
+        xin = signals.impulse(fft)
         self.filt(xin)
         (freq, psd, stats) = spectrum.analyze(
             self._xfilt * fft / np.sqrt(2),
@@ -147,7 +171,7 @@ class FIRLowPass:
         self.dec = dec
         self.fs = fs
         self.bit_depth = bit_depth
-        self.ntaps = np.size(coeffs) if coeffs is None else 0
+        self.ntaps = np.size(coeffs) if coeffs is not None else 0
         self.yfilt = None
         self._out = None
 

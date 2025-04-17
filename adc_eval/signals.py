@@ -16,3 +16,10 @@ def sin(t, amp=0.5, offset=0.5, freq=1e3, ph0=0):
 def noise(t, mean=0, std=0.1):
     """Generate random noise."""
     return np.random.normal(mean, std, size=len(t))
+
+
+def impulse(nsamp, mag=1):
+    """Generate an impulse input."""
+    data = np.zeros(nsamp)
+    data[0] = mag
+    return data

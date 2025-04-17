@@ -132,7 +132,7 @@ def plot_spectrum(
         fig, ax = plt.subplots(figsize=(15, 8))
         ax.plot(freq / xscale, psd_out)
         ax.set_ylabel(f"Power Spectrum ({yunits})", fontsize=18)
-        ax.set_xlabel(f"Frequency ({fscale})", fontsize=16)
+        ax.set_xlabel(f"Frequency ({fscale[0]})", fontsize=16)
         ax.set_title("Output Power Spectrum", fontsize=16)
         ax.set_xlim([xmin, fs / (2 * xscale)])
         ax.set_ylim([1.1 * min(psd_out), 1])
