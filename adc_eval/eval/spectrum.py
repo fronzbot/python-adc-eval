@@ -38,7 +38,12 @@ def get_spectrum(data, fs=1, nfft=2**12, single_sided=True):
 
 def window_data(data, window="rectangular"):
     """Applies a window to the time-domain data."""
-    wsize = data.size
+    try:
+        wsize = data.size
+    except AttributeError:
+        data = np.array(data)
+        wsize = data.size
+
     windows = {
         "rectangular": (np.ones(wsize), 1.0),
         "hanning": (np.hanning(wsize), 1.633)
@@ -64,26 +69,10 @@ def plot_spectrum(
     no_plot=False,
     yaxis="power",
     single_sided=True,
-    fscale="MHz",
+    fscale=("MHz", 1e6),
 ):
     """Plot Power Spectrum for input signal."""
-
-    fscalar = {
-        "uHz": 1e-6,
-        "mHz": 1e-3,
-        "Hz": 1,
-        "kHz": 1e3,
-        "MHz": 1e6,
-        "GHz": 1e9,
-        "THz": 1e12,
-    }
-    if fscale not in fscalar:
-        print(f"WARNING: {fscale} not implemented. Defaulting to 'MHz'.")
-        fscale = "MHz"
-
-    # Window the data and get the single or dual-sided spectrum
-    wdata = window_data(data, window=window)
-    (freq, pwr) = get_spectrum(wdata, fs=fs, nfft=nfft, single_sided=single_sided)
+    (freq, pwr) = get_spectrum(data, fs=fs, nfft=nfft, single_sided=single_sided)
     
     # Calculate the fullscale range of the spectrum in Watts
     full_scale = calc.dBW(dr**2 / 8)
@@ -99,13 +88,7 @@ def plot_spectrum(
     lut_key = yaxis.lower()
     scalar = yaxis_lut[lut_key][0]
     yunits = yaxis_lut[lut_key][1]
-    try:
-        xscale = fscalar[fscale]
-    except KeyError:
-        print(
-            f"WARNING: {fscale} not a valid option for fscale. Valid inputs are {fscalar.keys()}."
-        )
-        print("         Defaulting to Hz.")
+    xscale = fscale[1]
 
     # Convert to dBW and perform scalar based on y-axis scaling input
     psd_out = calc.dBW(pwr, places=3) - scalar
@@ -119,9 +102,7 @@ def plot_spectrum(
     psd_ss = pwr
     if not single_sided:
         # Get single-sided spectrum for SNDR and Harmonic stats
-        (f_ss, psd_ss) = get_spectrum(
-            data * windows[window] * wscale, fs=fs, nfft=nfft, single_sided=True
-        )
+        (f_ss, psd_ss) = get_spectrum(data, fs=fs, nfft=nfft, single_sided=True)
 
     sndr_stats = calc.sndr_sfdr(psd_ss, f_ss, fs, nfft, leak=leak, full_scale=full_scale)
     harm_stats = calc.find_harmonics(
@@ -143,7 +124,7 @@ def plot_spectrum(
 
     # If plotting, prep plot and generate all required axis strings
     if not no_plot:
-        plt_str = calc.get_plot_string(stats, full_scale, fs, nfft, window, xscale, fscale)
+        plt_str = calc.get_plot_string(stats, full_scale, fs, nfft, window, xscale, fscale[0])
         fig, ax = plt.subplots(figsize=(15, 8))
         ax.plot(freq / xscale, psd_out)
         ax.set_ylabel(f"Power Spectrum ({yunits})", fontsize=18)
@@ -226,8 +207,24 @@ def analyze(
     fscale="MHz",
 ):
     """Perform spectral analysis on input waveform."""
+    fscalar = {
+        "uHz": 1e-6,
+        "mHz": 1e-3,
+        "Hz": 1,
+        "kHz": 1e3,
+        "MHz": 1e6,
+        "GHz": 1e9,
+        "THz": 1e12,
+    }
+    if fscale not in fscalar:
+        print(f"WARNING: {fscale} not implemented. Defaulting to 'MHz'.")
+        fscale = "MHz"
+    
+    # Window the data
+    wdata = window_data(data, window=window)
+    
     (freq, spectrum, stats) = plot_spectrum(
-        data,
+        wdata,
         fs=fs,
         nfft=nfft,
         dr=dr,
@@ -237,7 +234,7 @@ def analyze(
         no_plot=no_plot,
         yaxis=yaxis,
         single_sided=single_sided,
-        fscale=fscale,
+        fscale=(fscale, fscalar[fscale]),
     )
 
     return (freq, spectrum, stats)

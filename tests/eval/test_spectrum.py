@@ -8,7 +8,7 @@ from adc_eval.eval import spectrum
 
 RTOL = 0.05
 NLEN = 2**18
-NFFT = 2**8
+NFFT = 2**10
 DATA_SINE = [
     {
         "f1": np.random.randint(1, NFFT / 4 - 1),
@@ -175,3 +175,155 @@ def test_calc_psd_two_sine_single(data):
 
     assert np.allclose(peak2, exp_peaks[1], rtol=RTOL), assertmsg
     assert np.allclose(fpeak, exp_f2), assertmsg
+
+
+def test_window_data_as_list():
+    """Tests the window_data function when given a list instead of numpy array."""
+    data = np.random.rand(NLEN).tolist()
+    wdata = spectrum.window_data(data, window="rectangular")
+    
+    assert type(data) == type(list())
+    assert type(wdata) == type(np.ndarray([]))
+
+
+def test_window_data_bad_window_type(capfd):
+    """Tests the window_data function with an incorrect window selection."""
+    data = np.random.rand(NLEN)
+    wdata = spectrum.window_data(data, window="foobar")
+    captured = capfd.readouterr()
+    
+    assert data.size == wdata.size
+    assert data.all() == wdata.all()
+    assert "WARNING" in captured.out
+
+
+@mock.patch("adc_eval.eval.spectrum.plot_spectrum")
+def test_analyze_bad_input_scalar(mock_plot_spectrum, capfd):
+    """Tests bad input scalar keys."""
+    mock_plot_spectrum.return_value = (None, None, None)
+    mock_plot_spectrum.side_effect = lambda *args, **kwargs: (kwargs, None, None)
+    (kwargs, _, _) = spectrum.analyze([0], 1, fscale="foobar")
+    captured = capfd.readouterr()
+
+    assert "WARNING" in captured.out
+    assert kwargs.get("fscale") == ("MHz", 1e6)
+
+
+@mock.patch("adc_eval.eval.spectrum.plot_spectrum")
+def test_analyze_valid_input_scalar(mock_plot_spectrum):
+    """Tests the valid input scalar keys."""
+    mock_plot_spectrum.return_value = (None, None, None)
+    mock_plot_spectrum.side_effect = lambda *args, **kwargs: (kwargs, None, None)
+    
+    test_vals = {
+        "Hz": 1,
+        "kHz": 1e3,
+        "MHz": 1e6,
+        "GHz": 1e9,
+    }
+    for key, val in test_vals.items():
+        (kwargs, _, _) = spectrum.analyze([0], 1, fscale=key)
+        assert kwargs.get("fscale") == (key, val)
+
+
+@mock.patch("adc_eval.eval.calc.sndr_sfdr")
+@mock.patch("adc_eval.eval.calc.find_harmonics")
+def test_analyze_no_plot(mock_sndr_sfdr, mock_find_harmonics):
+    """Tests the psd output of the analyze function with no plotting."""
+    data = np.random.rand(NLEN)
+    data_sndr = {
+        "sig": {"bin": 1, "power": 2},
+    }
+    data_harms = {"harmonics": 3}
+    exp_stats = {**data_sndr, **data_harms}
+    
+    mock_sndr_sfdr.return_value = data_sndr
+    mock_find_harmonics = data_harms
+    
+    (freq, psd, stats) = spectrum.analyze(
+        data,
+        fs=1,
+        nfft=NFFT,
+        dr=1,
+        harmonics=0,
+        leak=0,
+        window="rectangular",
+        no_plot=True,
+        yaxis="power",
+        single_sided=True,
+        fscale="Hz",
+    )
+    
+    assert freq.all() == np.linspace(0, 1, int(NFFT/2)).all()
+    assert psd.size == int(NFFT/2)
+    
+    for key, value in stats.items():
+        assert value == exp_stats[key]
+
+
+@mock.patch("adc_eval.eval.calc.sndr_sfdr")
+@mock.patch("adc_eval.eval.calc.find_harmonics")
+def test_analyze_no_plot_dual(mock_sndr_sfdr, mock_find_harmonics):
+    """Tests the psd output of the analyze function with no plotting."""
+    data = np.random.rand(NLEN)
+    data_sndr = {
+        "sig": {"bin": 1, "power": 2},
+    }
+    data_harms = {"harmonics": 3}
+    exp_stats = {**data_sndr, **data_harms}
+    
+    mock_sndr_sfdr.return_value = data_sndr
+    mock_find_harmonics = data_harms
+    
+    (freq, psd, stats) = spectrum.analyze(
+        data,
+        fs=1,
+        nfft=NFFT,
+        dr=1,
+        harmonics=0,
+        leak=0,
+        window="rectangular",
+        no_plot=True,
+        yaxis="power",
+        single_sided=False,
+        fscale="Hz",
+    )
+    
+    assert freq.all() == np.linspace(-0.5, 0.5, NFFT-1).all()
+    assert psd.size == NFFT
+    for key, value in stats.items():
+        assert value == exp_stats[key]
+
+
+@mock.patch("adc_eval.eval.calc.sndr_sfdr")
+@mock.patch("adc_eval.eval.calc.find_harmonics")
+def test_analyze_no_plot_magnitude(mock_sndr_sfdr, mock_find_harmonics):
+    """Tests the psd output of the analyze function with no plotting."""
+    data = np.random.rand(NLEN)
+    data_sndr = {
+        "sig": {"bin": 1, "power": 2},
+    }
+    data_harms = {"harmonics": 3}
+    exp_stats = {**data_sndr, **data_harms}
+    
+    mock_sndr_sfdr.return_value = data_sndr
+    mock_find_harmonics = data_harms
+    
+    (freq, psd, stats) = spectrum.analyze(
+        data,
+        fs=1,
+        nfft=NFFT,
+        dr=1,
+        harmonics=0,
+        leak=0,
+        window="rectangular",
+        no_plot=True,
+        yaxis="magnitude",
+        single_sided=True,
+        fscale="Hz",
+    )
+    
+    assert freq.all() == np.linspace(0, 1, int(NFFT/2)).all()
+    assert psd.size == int(NFFT/2)
+    for key, value in stats.items():
+        assert value == exp_stats[key]
