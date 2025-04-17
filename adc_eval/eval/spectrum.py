@@ -5,8 +5,25 @@ import matplotlib.pyplot as plt
 from adc_eval.eval import calc
 
 
-def calc_psd(data, fs, nfft=2**12):
-    """Calculate the PSD using the Bartlett method."""
+def calc_psd(data, fs=1, nfft=2**12):
+    """
+    Calculate the PSD using the Bartlett method.
+
+    Parameters
+    ----------
+    data : ndarray
+        Time-series input data.
+    fs : float, optional
+        Sample frequency of the input time series data in Hz. Default is 1Hz.
+    nfft : int, optional
+        Number of FFT samples to use for PSD calculation. Default is 2^12.
+
+    Returns
+    -------
+    list
+        [freq_ss, psd_ss, freq_ds, psd_ds]
+        List containing single and double-sided PSDs along with frequncy array.
+    """
     nwindows = max(1, int(np.floor(len(data) / nfft)))
     nfft = int(nfft)
     xs = data[0 : int(nwindows * nfft)]
@@ -29,7 +46,27 @@ def calc_psd(data, fs, nfft=2**12):
 
 
 def get_spectrum(data, fs=1, nfft=2**12, single_sided=True):
-    """Get the power spectrum for an input signal."""
+    """
+    Get the power spectrum for an input signal.
+
+    Parameters
+    ----------
+    data : ndarray
+        Time-series input data.
+    fs : float, optional
+        Sample frequency of the input time series data in Hz. Default is 1Hz.
+    nfft : int, optional
+        Number of FFT samples to use for PSD calculation. Default is 2^12.
+    single_sided : bool, optional
+        Set to `True` for single-sided spectrum or `False` for double-sided.
+        Default is `True`.
+
+    Returns
+    -------
+    tuple
+        (freq, psd)
+        Tuple containing frequency array and PSD of input data.
+    """
     (freq_ss, psd_ss, freq_ds, psd_ds) = calc_psd(np.array(data), fs=fs, nfft=nfft)
     if single_sided:
         return (freq_ss, psd_ss * fs / nfft)
@@ -37,7 +74,21 @@ def get_spectrum(data, fs=1, nfft=2**12, single_sided=True):
 
 
 def window_data(data, window="rectangular"):
-    """Applies a window to the time-domain data."""
+    """
+    Applies a window to the time-domain data.
+
+    Parameters
+    ----------
+    data : ndarray
+        Time-series input data.
+    window : str, optional
+        Window to use for input data. Default is rectangular.
+
+    Returns
+    -------
+    ndarray
+        Windowed version of input data.
+    """
     try:
         wsize = data.size
     except AttributeError:
@@ -71,7 +122,41 @@ def plot_spectrum(
     single_sided=True,
     fscale=("MHz", 1e6),
 ):
-    """Plot Power Spectrum for input signal."""
+    """
+    Plot Power Spectrum for input signal.
+
+    Parameters
+    ----------
+    data : ndarray
+        Time-series input data.
+    fs : float, optional
+        Sample frequency of the input time series data in Hz. Default is 1Hz.
+    nfft : int, optional
+        Number of FFT samples to use for PSD calculation. Default is 2^12.
+    dr : float, optional
+        Dynamic range for input data to be referenced to. Default is 1.
+    harmonics : int, optional
+        Number of harmonics to calculate and annotate on plot. Default is 7.
+    leak : int, optional
+        Number of leakage bins to use in signal and harmonic calculation. Default is 1.
+    window : str, optional
+        Type of input window to use for input data. Default is rectangular.
+    no_plot : bool, optional
+        Selects whether to plot (`False`) or not (`True`). Default is `False`.
+    yaxis : str, optional
+        Selects y-axis reference units. Example: `power`, `fullscale`, etc. Default is `power`.
+    single_sided : bool, optional
+        Set to `True` for single-sided spectrum or `False` for double-sided.
+        Default is `True`.
+    fscale : tuple, optional
+        Selects x-axis scaling and units. Default is ('MHz', 1e6).
+
+    Returns
+    -------
+    tuple
+        (freq, psd, stats)
+        Tuple containing frequency array, PSD of input data, and calculated statstics dictionary.
+    """
     (freq, pwr) = get_spectrum(data, fs=fs, nfft=nfft, single_sided=single_sided)
 
     # Calculate the fullscale range of the spectrum in Watts
@@ -210,7 +295,41 @@ def analyze(
     single_sided=True,
     fscale="MHz",
 ):
-    """Perform spectral analysis on input waveform."""
+    """
+    Perform spectral analysis on input waveform.
+
+    Parameters
+    ----------
+    data : ndarray
+        Time-series input data.
+    nfft : int
+        Number of FFT samples to use for PSD calculation.
+    fs : float, optional
+        Sample frequency of the input time series data in Hz. Default is 1Hz.
+    dr : float, optional
+        Dynamic range for input data to be referenced to. Default is 1.
+    harmonics : int, optional
+        Number of harmonics to calculate and annotate on plot. Default is 7.
+    leak : int, optional
+        Number of leakage bins to use in signal and harmonic calculation. Default is 1.
+    window : str, optional
+        Type of input window to use for input data. Default is rectangular.
+    no_plot : bool, optional
+        Selects whether to plot (`False`) or not (`True`). Default is `False`.
+    yaxis : str, optional
+        Selects y-axis reference units. Example: `power`, `fullscale`, etc. Default is `power`.
+    single_sided : bool, optional
+        Set to `True` for single-sided spectrum or `False` for double-sided.
+        Default is `True`.
+    fscale : str, optional
+        Selects x-axis units. Default is 'MHz'.
+
+    Returns
+    -------
+    tuple
+        (freq, psd, stats)
+        Tuple containing frequency array, PSD of input data, and calculated statstics dictionary.
+    """
     fscalar = {
         "uHz": 1e-6,
         "mHz": 1e-3,

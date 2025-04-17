@@ -41,8 +41,7 @@ def test_sin(nlen, offset, amp):
 @pytest.mark.parametrize("nlen", np.random.randint(1, 2**16, 5))
 def test_noise_length(nlen):
     """Test noise generation with random data."""
-    t = signals.time(nlen, fs=1)
-    value = signals.noise(t, mean=0, std=1)
+    value = signals.noise(nlen, mean=0, std=1)
 
     # Just check correct size
     assert value.size == nlen
@@ -52,8 +51,7 @@ def test_noise_length(nlen):
 def test_noise_length(std):
     """Test noise is gaussian with random data."""
     nlen = 2**12
-    t = signals.time(nlen, fs=1)
-    noise = signals.noise(t, mean=0, std=std)
+    noise = signals.noise(nlen, mean=0, std=std)
     autocorr = np.correlate(noise, noise, mode="full")
     autocorr /= max(autocorr)
     asize = autocorr.size
