@@ -111,7 +111,7 @@ class ADC:
     @offset.setter
     def offset(self, values):
         """Set offset mean and stdev."""
-        self.err["offset"] = values[0] + values[1] * np.random.randn(1)
+        self.err["offset"] = np.random.normal(values[0], values[1])
 
     @property
     def gain_error(self):
@@ -121,7 +121,7 @@ class ADC:
     @gain_error.setter
     def gain_error(self, values):
         """Set gain error mean and stdev."""
-        self.err["gain"] = values[0] + values[1] * np.random.randn(1)
+        self.err["gain"] = np.random.normal(values[0], values[1])
 
     @property
     def distortion(self):

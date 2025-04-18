@@ -17,17 +17,15 @@ FS = 200e6
 NLEN = 2**16    # Larger than NFFT to enable Bartlett method for PSD
 NFFT = 2**12
 vref = 1
-fin_bin = NFFT / 4 - 31
-fin = fin_bin * FS/NFFT
+fbin = NFFT / 4 - 31
+ftone = NFFT / 2 - 15
 vin_amp = 0.707 * vref / 2
 
 
 """
 VIN Generation
 """
-t = signals.time(NLEN, FS)
-vin = signals.sin(t, amp=vin_amp, offset=0, freq=fin)
-vin += signals.sin(t, amp=vin_amp*0.2, offset=0, freq=(NFFT/2-15)*FS/NFFT)  # Adds tone to show intermodulation
+(t, vin) = signals.tones(NLEN, [fbin, ftone], [vin_amp, vin_amp*0.2], offset=0, fs=FS, nfft=NFFT)
 
 """
 ADC Architecture Creation
