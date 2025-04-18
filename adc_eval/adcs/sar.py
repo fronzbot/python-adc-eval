@@ -62,7 +62,8 @@ class SAR(ADC):
         self._comp_noise = 0
 
         # Get keyword arguments
-        self._weights = kwargs.get("weights", None)
+        self._weights = None
+        self.weights = kwargs.get("weights", self.weights)
 
     @property
     def weights(self):
@@ -75,6 +76,7 @@ class SAR(ADC):
     def weights(self, values):
         """Sets the capacitor unit weights."""
         self._weights = np.array(values)
+        self.dbits = np.zeros(len(values))
         if self._weights.size < self.nbits:
             print(
                 f"WARNING: Capacitor weight array size is {self._weights.size} for {self.nbits}-bit ADC."
