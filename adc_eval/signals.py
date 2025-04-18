@@ -89,3 +89,45 @@ def impulse(nlen, mag=1):
     data = np.zeros(nlen)
     data[0] = mag
     return data
+
+
+def tones(nlen, bins, amps, offset=0, fs=1, nfft=None, phases=None):
+    """
+    Generate a time-series of multiple tones.
+
+    Parameters
+    ----------
+    nlen : int
+        Length of time-series array.
+    bins : list
+        List of signal bins to generate tones for.
+    amps : list
+        List of amplitudes for given bins.
+    offset : int, optional
+        Offset to apply to each signal (globally applied).
+    fs : float, optional
+        Sample rate of the signal in Hz. The default is 1Hz.
+    nfft : int, optional
+        Number of FFT samples, if different than length of signal. The default is None.
+    phases : list, optional
+        List of phase shifts for each bin. The default is None.
+
+    Returns
+    -------
+    tuple of ndarray
+        (time, signal)
+        Time-series and associated tone array.
+    """
+    t = time(nlen, fs=fs)
+    
+    signal = np.zeros(nlen)
+    if phases is None:
+        phases = np.zeros(nlen)
+    if nfft is None:
+        nfft = nlen
+    
+    fbin = fs / nfft
+    for index, nbin in enumerate(bins):
+        signal += sin(t, amp=amps[index], offset=offset, freq=nbin*fbin, ph0=phases[index])
+
+    return (t, signal)

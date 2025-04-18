@@ -8,7 +8,6 @@ from adc_eval import signals
 
 RTOL = 0.01
 
-
 @pytest.mark.parametrize("nlen", np.random.randint(4, 2**16, 3))
 @pytest.mark.parametrize("fs", np.random.uniform(1, 1e9, 3))
 def test_time(nlen, fs):
@@ -77,3 +76,38 @@ def test_impulse(nlen, mag):
     assert data.size == nlen
     assert data[0] == mag
     assert data[1:].all() == 0
+
+
+@pytest.mark.parametrize("nlen", np.random.randint(2, 2**12, 3))
+def test_tones_no_nfft_arg(nlen):
+    """Test tone generation with random length no nfft param."""
+    (t, data) = signals.tones(nlen, [0.5], [0.5])
+    
+    assert t.size == nlen
+    assert t[0] == 0
+    assert t[-1] == nlen-1
+    assert data.size == nlen
+
+
+@pytest.mark.parametrize("fs", np.random.uniform(100, 1e9, 3))
+@pytest.mark.parametrize("nlen", np.random.randint(2, 2**12, 3))
+def test_tones_with_fs_arg(fs, nlen):
+    """Test tone generation with random length and fs given."""
+    (t, data) = signals.tones(nlen, [0.5], [0.5], fs=fs)
+    
+    assert t.size == nlen
+    assert t[0] == 0
+    assert np.isclose(t[-1], (nlen-1) / fs, rtol=RTOL)
+    assert data.size == nlen
+
+
+@pytest.mark.parametrize("nlen", np.random.randint(2, 2**12, 3))
+def test_tones_with_empty_list( nlen):
+    """Test tone generation with random length and fs given."""
+    (t, data) = signals.tones(nlen, [], [])
+    
+    assert t.size == nlen
+    assert t[0] == 0
+    assert t[-1] == nlen-1
+    assert data.size == nlen
+    assert data.all() == np.zeros(nlen).all()
