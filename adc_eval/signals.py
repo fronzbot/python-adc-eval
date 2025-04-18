@@ -119,15 +119,17 @@ def tones(nlen, bins, amps, offset=0, fs=1, nfft=None, phases=None):
         Time-series and associated tone array.
     """
     t = time(nlen, fs=fs)
-    
+
     signal = np.zeros(nlen)
     if phases is None:
         phases = np.zeros(nlen)
     if nfft is None:
         nfft = nlen
-    
+
     fbin = fs / nfft
     for index, nbin in enumerate(bins):
-        signal += sin(t, amp=amps[index], offset=offset, freq=nbin*fbin, ph0=phases[index])
+        signal += sin(
+            t, amp=amps[index], offset=offset, freq=nbin * fbin, ph0=phases[index]
+        )
 
     return (t, signal)

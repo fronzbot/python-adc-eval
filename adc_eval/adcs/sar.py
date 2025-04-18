@@ -36,6 +36,8 @@ class SAR(ADC):
         Sets or returns the capacitor weighting of the array. Default is binary weighting.
     mismatch : float
         Sets or returns the stdev of the mismatch of the converter. Default is no mismatch.
+    comp_noise : float
+        Sets or returns the stdev of the comparator noise. Default is no noise.
     offset : tuple of float
         Sets the (mean, stdev) of the offset of the converter. Default is no offset.
     gain_error : tuple of float
@@ -57,15 +59,16 @@ class SAR(ADC):
         super().__init__(nbits, fs, vref, seed)
 
         self._mismatch = None
+        self._comp_noise = 0
 
         # Get keyword arguments
         self._weights = kwargs.get("weights", None)
-        
+
     @property
     def weights(self):
         """Returns capacitor unit weights."""
         if self._weights is None:
-            self._weights = np.flip(2**np.linspace(0, self.nbits-1, self.nbits))
+            self._weights = np.flip(2 ** np.linspace(0, self.nbits - 1, self.nbits))
         return np.array(self._weights)
 
     @weights.setter
@@ -73,9 +76,11 @@ class SAR(ADC):
         """Sets the capacitor unit weights."""
         self._weights = np.array(values)
         if self._weights.size < self.nbits:
-            print(f"WARNING: Capacitor weight array size is {self._weights.size} for {self.nbits}-bit ADC.")
+            print(
+                f"WARNING: Capacitor weight array size is {self._weights.size} for {self.nbits}-bit ADC."
+            )
         self.mismatch = self.err["mismatch"]
-        
+
     @property
     def mismatch(self):
         """Return noise stdev."""
@@ -90,24 +95,34 @@ class SAR(ADC):
         self._mismatch = np.random.normal(0, stdev, self.weights.size)
         self._mismatch /= np.sqrt(self.weights)
 
+    @property
+    def comp_noise(self):
+        """Returns the noise of the comparator."""
+        return self._comp_noise
+
+    @comp_noise.setter
+    def comp_noise(self, value):
+        """Sets the noise of the comparator."""
+        self._comp_noise = value
+
     def run_step(self):
         """Run a single ADC step."""
         vinx = self.vin
-        
+
         cweights = self.weights * (1 + self.mismatch)
         cdenom = sum(cweights) + 1
-        
-        comp_noise = np.random.normal(0, self.err["noise"], cweights.size)
-        
+
+        comp_noise = np.random.normal(0, self.comp_noise, cweights.size)
+
         # Bit cycling
         vdac = vinx
-        for n in range(len(cweights)):
-            vcomp = vdac - self.vref / 2
+        for n, _ in enumerate(cweights):
+            vcomp = vdac - self.vref / 2 + comp_noise[n]
             compout = vcomp * 1e6
             compout = -1 if compout <= 0 else 1
             self.dbits[n] = max(0, compout)
             vdac -= compout * self.vref / 2 * cweights[n] / cdenom
-            
+
         # Re-scale the data
         scalar = 2**self.nbits / cdenom
-        self.dval = min(2**self.nbits-1, scalar * sum(self.weights * self.dbits))
+        self.dval = min(2**self.nbits - 1, scalar * sum(self.weights * self.dbits))
