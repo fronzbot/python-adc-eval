@@ -21,7 +21,7 @@ classifiers = [
 ]
 requires-python = ">=3.9.0"
 dependencies = [
-    "matplotlib==3.9.2",
+    "matplotlib==3.9.4",
 ]
 
 [project.urls]
