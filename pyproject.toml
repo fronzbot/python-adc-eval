@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "python-adc-eval"
-version = "0.4.0rc1"
+version = "0.4.0"
 license = {text = "MIT"}
 description = "ADC Evaluation Library"
 readme = "README.rst"
