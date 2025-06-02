@@ -9,6 +9,7 @@ disable=
     duplicate-code,
     implicit-str-concat,
     too-many-arguments,
+    too-many-positional-arguments,
     too-many-branches,
     too-many-instance-attributes,
     too-many-locals,

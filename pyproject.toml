@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools~=68.0", "wheel~=0.40.0"]
+requires = ["setuptools>=68,<76", "wheel~=0.40,<0.46"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "python-adc-eval"
-version = "0.3.0"
+version = "0.4.0rc1"
 license = {text = "MIT"}
 description = "ADC Evaluation Library"
 readme = "README.rst"
@@ -21,7 +21,7 @@ classifiers = [
 ]
 requires-python = ">=3.9.0"
 dependencies = [
-    "matplotlib==3.9.0",
+    "matplotlib==3.9.2",
 ]
 
 [project.urls]
@@ -73,6 +73,7 @@ ignore = [
     "PLR0912", # Too many branches ({branches} > {max_branches})
     "PLR0913", # Too many arguments to function call ({c_args} > {max_args})
     "PLR0915", # Too many statements ({statements} > {max_statements})
+    "PLR0917", # Too many positional arguments
     "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
     "PLW2901", # Outer {outer_kind} variable {name} overwritten by inner {inner_kind} target
     "T201", # Allow print statements
